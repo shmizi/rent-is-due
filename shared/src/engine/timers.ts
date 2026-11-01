@@ -1,7 +1,7 @@
 import type { GameEvent, GameState, PlayerState } from '../types.ts';
 import { finishAuction, removeBidder } from './auction.ts';
 import { eliminate } from './bankruptcy.ts';
-import { emit, fail, findPlayer, isActive } from './helpers.ts';
+import { emit, fail, findPlayer, frozenNow, isActive } from './helpers.ts';
 import { settleDebts } from './money.ts';
 import { cleanupTrades } from './trades.ts';
 import { decline, endTurn, roll } from './turn.ts';
@@ -95,7 +95,7 @@ export function disconnect(state: GameState, player: PlayerState, now: number, e
 
   player.connected = false;
   if (isActive(player)) {
-    player.away = { deadline: now + state.settings.room.awayTimeoutMin * 60 * 1000, votes: [], extensions: 0 };
+    player.away = { deadline: frozenNow(state, now) + state.settings.room.awayTimeoutMin * 60 * 1000, votes: [], extensions: 0 };
     if (state.auction && state.auction.highBidder !== player.id) removeBidder(state, player.id, now, events);
   }
 
@@ -151,7 +151,8 @@ export function resume(state: GameState, now: number, events: GameEvent[]): void
 }
 
 export function restore(state: GameState, now: number, events: GameEvent[]): void {
-  const graceEnd = now + RESTORE_GRACE_MS;
+  const base = frozenNow(state, now);
+  const graceEnd = base + RESTORE_GRACE_MS;
 
   if (state.auction && state.auction.deadline < graceEnd) state.auction.deadline = graceEnd;
   const step = state.timers.step;
@@ -163,14 +164,14 @@ export function restore(state: GameState, now: number, events: GameEvent[]): voi
 
   for (const player of state.players) {
     player.connected = false;
-    player.away = isActive(player) ? { deadline: now + state.settings.room.awayTimeoutMin * 60 * 1000, votes: [], extensions: 0 } : null;
+    player.away = isActive(player) ? { deadline: base + state.settings.room.awayTimeoutMin * 60 * 1000, votes: [], extensions: 0 } : null;
   }
 
   emit(state, events, { type: 'restored' });
 }
 
 export function extendDeadlines(state: GameState, now: number, minMs: number): void {
-  const earliest = now + Math.max(0, minMs);
+  const earliest = frozenNow(state, now) + Math.max(0, minMs);
 
   if (state.auction && state.auction.deadline < earliest) state.auction.deadline = earliest;
   if (state.timers.step?.deadline != null && state.timers.step.deadline < earliest) state.timers.step.deadline = earliest;

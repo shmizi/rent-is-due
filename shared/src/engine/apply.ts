@@ -33,9 +33,9 @@ function runPlayerAction(state: GameState, action: Exclude<Action, { type: Syste
     case 'endTurn':
       return endTurn(state, player, events);
     case 'bid':
-      return placeBid(state, player, action.amount, now, events);
+      return placeBid(state, player, action.auction, action.amount, now, events);
     case 'dropOut':
-      return dropOut(state, player, now, events);
+      return dropOut(state, player, action.auction, now, events);
     case 'build':
       return build(state, player, action.space, events);
     case 'sellBuilding':

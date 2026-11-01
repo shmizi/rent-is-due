@@ -571,3 +571,12 @@ Every event stays under the free plan's 10 ms CPU limit. The 7 ms maximum was a 
 1. **Phones:** open the live link on a few phones, both on Wi-Fi and on mobile data. Check the layout, tapping tiles, and how quickly a locked phone drops its connection, then decide whether a 5-minute away timeout is right.
 2. **First game night:** log the bugs, tune the timers, and record how long the game takes.
 3. Still not seen on screen: an auction in the UI, the debt screen and the Lockup buttons. A real game will reach all three.
+
+### Fixes from a code review (2026-11-01, after the first deploy)
+1. **Joining:** a connection that has already joined can't send another `hello`. Hellos are limited to 30 per 10 s per room, new members to 12 per minute, and spectators to 20. A join that hits the limit is closed with code 4029, and the client tries again.
+2. **Host after a restart:** if the host isn't back when the room starts up, their 2-minute handover clock starts then.
+3. **Seat token:** the client keeps the token in memory too, so a reconnect gets the same seat back even when browser storage is blocked.
+4. **Bids:** each auction has an id (`nextAuctionId` in the game state). Bids and drop-outs must name it, so a late click from the previous auction is rejected with "That auction has ended."
+5. **Pauses:** an away clock or auction started during a pause counts from the moment the pause began. A 5-minute timeout stays 5 minutes after the game resumes.
+
+Also fixed: the room tests now pick the game's seed, so the 6-player test plays the same game every run. Before, about 1 run in 6 never reached an auction. 121 tests pass.

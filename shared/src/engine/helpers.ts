@@ -23,6 +23,10 @@ export function fail(code: string, message: string): never {
   throw new GameError(code, message);
 }
 
+export function frozenNow(state: GameState, now: number): number {
+  return state.timers.pausedAt ?? now;
+}
+
 export function mapOf(state: GameState): MapDef {
   return getMap(state.mapId);
 }

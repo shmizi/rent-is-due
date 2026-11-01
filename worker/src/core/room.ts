@@ -34,6 +34,11 @@ const CHAT_KEEP = 200;
 const HISTORY_SENT = 50;
 const RATE_WINDOW_MS = 2 * SECOND;
 const RATE_LIMIT = 25;
+const HELLO_WINDOW_MS = 10 * SECOND;
+const HELLO_LIMIT = 30;
+const JOIN_WINDOW_MS = MINUTE;
+const JOIN_LIMIT = 12;
+const MAX_SPECTATORS = 20;
 const SPECTATOR_COLOR = '#9AA0C8';
 
 const PLAYER_ACTIONS = new Set<string>([
@@ -200,9 +205,15 @@ export class RoomCore {
     const meta = this.meta;
     if (!meta) return;
 
+    const live = this.livePlayers();
+    const now = this.host.now();
+
+    if (meta.hostId !== null && meta.hostAwaySince === null && !live.has(meta.hostId)) {
+      meta.hostAwaySince = now;
+      this.saveMeta();
+    }
+
     if (meta.phase === 'playing' && this.game) {
-      const live = this.livePlayers();
-      const now = this.host.now();
       let missing = false;
 
       for (const p of this.game.players) {
@@ -369,14 +380,19 @@ export class RoomCore {
     return true;
   }
 
-  private allow(playerId: string, now: number): boolean {
-    const rate = this.rates.get(playerId);
-    if (!rate || now - rate.start > RATE_WINDOW_MS) {
-      this.rates.set(playerId, { start: now, count: 1 });
+  private allow(key: string, now: number, limit = RATE_LIMIT, windowMs = RATE_WINDOW_MS): boolean {
+    const rate = this.rates.get(key);
+    if (!rate || now - rate.start > windowMs) {
+      this.rates.set(key, { start: now, count: 1 });
       return true;
     }
     rate.count++;
-    return rate.count <= RATE_LIMIT;
+    return rate.count <= limit;
+  }
+
+  private turnAway(conn: Conn, code: string, message: string): void {
+    this.reject(conn, undefined, code, message);
+    conn.close(4029, message);
   }
 
   async onMessage(conn: Conn, raw: string): Promise<void> {
@@ -401,6 +417,14 @@ export class RoomCore {
     this.meta.stats.messages++;
 
     if (message.t === 'hello') {
+      if (conn.info()) {
+        this.reject(conn, undefined, 'alreadyJoined', 'This connection has already joined.');
+        return;
+      }
+      if (!this.allow('hello', this.host.now(), HELLO_LIMIT, HELLO_WINDOW_MS)) {
+        this.turnAway(conn, 'rateLimited', 'Too many people joining at once. Trying again shortly.');
+        return;
+      }
       await this.hello(conn, message);
       return;
     }
@@ -478,13 +502,22 @@ export class RoomCore {
     }
 
     const players = this.members().filter((m) => m.role === 'player');
+    const spectators = this.members().length - players.length;
     let role: Role;
     if (meta.phase === 'lobby' && !message.spectate && players.length < meta.settings.room.maxPlayers) {
       role = 'player';
-    } else if (meta.settings.room.spectators) {
+    } else if (meta.settings.room.spectators && spectators < MAX_SPECTATORS) {
       role = 'spectator';
+    } else if (meta.phase === 'lobby' || meta.settings.room.spectators) {
+      this.reject(conn, undefined, 'roomFull', 'This room is full.');
+      return;
     } else {
-      this.reject(conn, undefined, meta.phase === 'lobby' ? 'roomFull' : 'gameStarted', meta.phase === 'lobby' ? 'This room is full.' : 'This game has already started.');
+      this.reject(conn, undefined, 'gameStarted', 'This game has already started.');
+      return;
+    }
+
+    if (!this.allow('join', this.host.now(), JOIN_LIMIT, JOIN_WINDOW_MS)) {
+      this.turnAway(conn, 'rateLimited', 'Too many people joining at once. Trying again shortly.');
       return;
     }
 
@@ -665,7 +698,7 @@ export class RoomCore {
       mapId: meta.mapId,
       settings: meta.settings,
       players: players.map((m) => ({ id: m.id, name: m.name, color: m.color })),
-      seed: randomSeed(),
+      seed: this.host.seed?.() ?? randomSeed(),
       now
     });
 

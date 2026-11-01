@@ -17,7 +17,7 @@ export function AuctionPanel() {
   const price = 'price' in space ? space.price : 0;
   const bidding = !!me && auction.bidders.includes(me.id);
   const leading = auction.highBidder === me?.id;
-  const bid = (amount: number) => connection.act({ type: 'bid', amount });
+  const bid = (amount: number) => connection.act({ type: 'bid', auction: auction.id, amount });
 
   return (
     <Panel title="Auction" right={<span className="money text-sm font-semibold text-amber">{clock(auction.deadline - now)}</span>}>
@@ -48,7 +48,7 @@ export function AuctionPanel() {
           >
             <input type="number" inputMode="numeric" value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Your bid" aria-label="Custom bid" className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-ink px-3" />
             <Button type="submit">Bid</Button>
-            <Button tone="danger" onClick={() => connection.act({ type: 'dropOut' })}>
+            <Button tone="danger" onClick={() => connection.act({ type: 'dropOut', auction: auction.id })}>
               Drop out
             </Button>
           </form>

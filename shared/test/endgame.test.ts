@@ -87,6 +87,23 @@ describe('bankruptcy', () => {
     expect(state.auctionQueue).toEqual([39]);
   });
 
+  it('rejects a late bid meant for the auction before', () => {
+    const state = newGame(3, (s) => (s.bankruptProperties = 'auction'));
+    own(state, 'p1', [37, 39]);
+    state.debts.push({ debtor: 'p1', creditor: { kind: 'bank' }, amount: 5000, reason: 'tax' });
+    act(state, { type: 'declareBankruptcy', player: 'p1' });
+    const first = state.auction!.id;
+
+    act(state, { type: 'dropOut', player: 'p2', auction: first });
+    act(state, { type: 'dropOut', player: 'p3', auction: first });
+    expect(state.auction?.space).toBe(39);
+
+    expect(() => act(state, { type: 'bid', player: 'p2', auction: first, amount: 50 })).toThrow('ended');
+    expect(() => act(state, { type: 'dropOut', player: 'p3', auction: first })).toThrow('ended');
+    expect(state.auction!.highBidder).toBeNull();
+    expect(state.auction!.bidders).toEqual(['p2', 'p3']);
+  });
+
   it('splits the cash between several creditors', () => {
     const state = newGame(3);
     player(state, 'p1').cash = 50;
@@ -148,8 +165,8 @@ describe('timers', () => {
     act(state, { type: 'decline', player: 'p1' });
     expect(state.timers.step?.deadline).toBeNull();
 
-    act(state, { type: 'dropOut', player: 'p1' }, T0 + 2000);
-    act(state, { type: 'dropOut', player: 'p2' }, T0 + 3000);
+    act(state, { type: 'dropOut', player: 'p1', auction: 1 }, T0 + 2000);
+    act(state, { type: 'dropOut', player: 'p2', auction: 1 }, T0 + 3000);
     expect(state.timers.step?.deadline).toBe(T0 + 3000 + MINUTE);
   });
 
@@ -206,6 +223,15 @@ describe('timers', () => {
     act(state, { type: 'resume' }, T0 + 2 * MINUTE);
     expect(player(state, 'p2').away?.deadline).toBe(T0 + 7 * MINUTE);
     expect(state.timers.step?.deadline).toBe(T0 + 3 * MINUTE);
+  });
+
+  it('gives a player who drops during a pause the normal away time once the game resumes', () => {
+    const state = newGame(3);
+    act(state, { type: 'pause' });
+    act(state, { type: 'disconnect', player: 'p2' }, T0 + 3 * MINUTE);
+    act(state, { type: 'resume' }, T0 + 10 * MINUTE);
+
+    expect(player(state, 'p2').away?.deadline).toBe(T0 + 15 * MINUTE);
   });
 
   it('gives everyone a fresh away clock and at least 30 seconds after a restart', () => {

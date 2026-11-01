@@ -184,6 +184,7 @@ export interface TurnState {
 }
 
 export interface AuctionState {
+  id: number;
   space: number;
   highBid: number;
   highBidder: PlayerId | null;
@@ -238,6 +239,7 @@ export interface GameState {
   jackpot: number;
   auction: AuctionState | null;
   auctionQueue: number[];
+  nextAuctionId: number;
   debts: Debt[];
   trades: TradeOffer[];
   nextTradeId: number;
@@ -255,8 +257,8 @@ export type PlayerAction =
   | { type: 'buy'; player: PlayerId }
   | { type: 'decline'; player: PlayerId }
   | { type: 'endTurn'; player: PlayerId }
-  | { type: 'bid'; player: PlayerId; amount: number }
-  | { type: 'dropOut'; player: PlayerId }
+  | { type: 'bid'; player: PlayerId; auction: number; amount: number }
+  | { type: 'dropOut'; player: PlayerId; auction: number }
   | { type: 'build'; player: PlayerId; space: number }
   | { type: 'sellBuilding'; player: PlayerId; space: number }
   | { type: 'mortgage'; player: PlayerId; space: number }

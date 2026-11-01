@@ -1,5 +1,5 @@
 import type { GameEvent, GameState, PlayerState } from '../types.ts';
-import { emit, fail, findPlayer, isActive } from './helpers.ts';
+import { emit, fail, findPlayer, frozenNow, isActive } from './helpers.ts';
 import { charge } from './money.ts';
 
 const BID_EXTENSION_MS = 5000;
@@ -15,11 +15,12 @@ export function startAuction(
   if (bidders.length === 0) return false;
 
   state.auction = {
+    id: state.nextAuctionId++,
     space,
     highBid: 0,
     highBidder: null,
     bidders,
-    deadline: now + state.settings.room.auctionTimerSec * 1000,
+    deadline: frozenNow(state, now) + state.settings.room.auctionTimerSec * 1000,
     source
   };
 
@@ -73,9 +74,15 @@ export function removeBidder(state: GameState, id: string, now: number, events: 
   checkAuctionEnd(state, now, events);
 }
 
-export function placeBid(state: GameState, player: PlayerState, amount: number, now: number, events: GameEvent[]): void {
+function currentAuction(state: GameState, id: number) {
   const auction = state.auction;
   if (!auction) fail('noAuction', 'There is no auction running.');
+  if (auction.id !== id) fail('auctionOver', 'That auction has ended.');
+  return auction;
+}
+
+export function placeBid(state: GameState, player: PlayerState, id: number, amount: number, now: number, events: GameEvent[]): void {
+  const auction = currentAuction(state, id);
   if (!auction.bidders.includes(player.id)) fail('notBidding', 'You are not in this auction.');
   if (!Number.isInteger(amount) || amount <= auction.highBid) fail('bidTooLow', 'Your bid must beat the top bid.');
   if (amount > player.cash) fail('cannotAfford', 'You cannot bid more than your cash.');
@@ -88,9 +95,8 @@ export function placeBid(state: GameState, player: PlayerState, amount: number, 
   checkAuctionEnd(state, now, events);
 }
 
-export function dropOut(state: GameState, player: PlayerState, now: number, events: GameEvent[]): void {
-  const auction = state.auction;
-  if (!auction) fail('noAuction', 'There is no auction running.');
+export function dropOut(state: GameState, player: PlayerState, id: number, now: number, events: GameEvent[]): void {
+  const auction = currentAuction(state, id);
   if (!auction.bidders.includes(player.id)) fail('notBidding', 'You are not in this auction.');
   if (auction.highBidder === player.id) fail('leadingBid', 'You have the top bid, so you cannot drop out.');
 

@@ -85,16 +85,18 @@ export class TestRoom {
   conns: FakeConn[] = [];
   alarm: number | null = null;
   now: number;
+  seed: number | undefined;
   core: RoomCore;
 
-  constructor(db = new DatabaseSync(':memory:'), now = T0) {
+  constructor(db = new DatabaseSync(':memory:'), now = T0, seed?: number) {
     this.db = db;
     this.now = now;
+    this.seed = seed;
     this.core = new RoomCore(this.host());
   }
 
-  static create(): TestRoom {
-    const room = new TestRoom();
+  static create(seed?: number): TestRoom {
+    const room = new TestRoom(undefined, T0, seed);
     room.core.init('ABCDEF');
     return room;
   }
@@ -124,6 +126,7 @@ export class TestRoom {
         this.alarm = at;
       },
       now: () => this.now,
+      seed: this.seed === undefined ? undefined : () => this.seed!,
       deleteAll: () => {
         for (const table of ['meta', 'game', 'actions', 'members', 'chat']) this.db.exec(`DROP TABLE IF EXISTS ${table}`);
         this.alarm = null;
@@ -151,7 +154,7 @@ export class TestRoom {
 
   restart(): TestRoom {
     for (const conn of this.conns) conn.open = false;
-    const next = new TestRoom(this.db, this.now);
+    const next = new TestRoom(this.db, this.now, this.seed);
     next.alarm = this.alarm;
     next.core.onStart();
     return next;

@@ -173,6 +173,28 @@ describe('playing', () => {
     expect(room.state().game!.version).toBe(0);
   });
 
+  it('lets a connection join only once', async () => {
+    const { room, conns } = await lobby(['Sam']);
+    for (let i = 0; i < 5; i++) await conns[0].say({ t: 'hello', name: `Fake ${i}` });
+
+    expect(conns[0].last('reject')!.code).toBe('alreadyJoined');
+    expect(room.state().members).toHaveLength(1);
+  });
+
+  it('limits how fast new people can join', async () => {
+    const room = TestRoom.create();
+    const joined: FakeConn[] = [];
+    for (let i = 0; i < 14; i++) joined.push(await room.join(`P${i}`, true));
+
+    expect(room.state().members).toHaveLength(12);
+    expect(joined[13].last('reject')!.code).toBe('rateLimited');
+    expect(joined[13].open).toBe(false);
+
+    room.advance(MINUTE + SECOND);
+    const later = await room.join('Late', true);
+    expect(later.last('welcome')).toBeDefined();
+  });
+
   it('limits how fast one person can send messages', async () => {
     const { conns } = await started(['Sam', 'Priya']);
     for (let i = 0; i < 26; i++) await conns[0].say({ t: 'sync' });
@@ -254,6 +276,17 @@ describe('restarts', () => {
 
     expect(next.state().game!.players.every((p) => p.connected && p.away === null)).toBe(true);
     expectMirrorsMatch(next, back);
+  });
+
+  it('hands the host role on when the host does not come back after a restart', async () => {
+    const { room, conns } = await started(['Sam', 'Priya']);
+    const priyaToken = conns[1].last('welcome')!.you.token!;
+
+    const next = room.restart();
+    const priya = await next.rejoin(priyaToken);
+    next.advance(2 * MINUTE + SECOND);
+
+    expect(priya.room!.members.find((m) => m.host)!.name).toBe('Priya');
   });
 });
 

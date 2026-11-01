@@ -48,7 +48,7 @@ function stripVolatile(game: GameState): unknown {
 export async function playRoomGame(options: RoomGameOptions): Promise<RoomGameResult> {
   const rand = makeRand(options.seed);
   const maxSteps = options.maxSteps ?? 40000;
-  let room = TestRoom.create();
+  let room = TestRoom.create(options.seed);
   const seats: Seat[] = [];
 
   const names = ['Sam', 'Priya', 'Leo', 'Mei', 'Jo', 'Ava', 'Noor', 'Kai'];

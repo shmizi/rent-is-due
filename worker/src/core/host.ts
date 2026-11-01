@@ -28,6 +28,7 @@ export interface RoomHost {
   setAlarm(at: number | null): void;
   now(): number;
   deleteAll(): void;
+  seed?(): number;
 }
 
 export function randomHex(bytes: number): string {

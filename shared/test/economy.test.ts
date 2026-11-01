@@ -96,17 +96,17 @@ describe('auctions', () => {
     const state = auctionFor(3);
     expect(state.auction!.deadline).toBe(T0 + 10_000);
 
-    act(state, { type: 'bid', player: 'p2', amount: 50 }, T0 + 8000);
+    act(state, { type: 'bid', player: 'p2', auction: 1, amount: 50 }, T0 + 8000);
     expect(state.auction!.deadline).toBe(T0 + 13_000);
   });
 
   it('stops the top bidder dropping out and ends when everyone else has', () => {
     const state = auctionFor(3);
-    act(state, { type: 'bid', player: 'p2', amount: 50 });
-    expect(() => act(state, { type: 'dropOut', player: 'p2' })).toThrow('top bid');
+    act(state, { type: 'bid', player: 'p2', auction: 1, amount: 50 });
+    expect(() => act(state, { type: 'dropOut', player: 'p2', auction: 1 })).toThrow('top bid');
 
-    act(state, { type: 'dropOut', player: 'p1' });
-    const events = act(state, { type: 'dropOut', player: 'p3' });
+    act(state, { type: 'dropOut', player: 'p1', auction: 1 });
+    const events = act(state, { type: 'dropOut', player: 'p3', auction: 1 });
 
     expect(types(events)).toContain('auctionWon');
     expect(state.props[3]!.owner).toBe('p2');
@@ -116,14 +116,14 @@ describe('auctions', () => {
 
   it('rejects bids that are too low or more than the bidder has', () => {
     const state = auctionFor(2);
-    act(state, { type: 'bid', player: 'p2', amount: 50 });
-    expect(() => act(state, { type: 'bid', player: 'p1', amount: 50 })).toThrow('beat the top bid');
-    expect(() => act(state, { type: 'bid', player: 'p1', amount: 5000 })).toThrow('more than your cash');
+    act(state, { type: 'bid', player: 'p2', auction: 1, amount: 50 });
+    expect(() => act(state, { type: 'bid', player: 'p1', auction: 1, amount: 50 })).toThrow('beat the top bid');
+    expect(() => act(state, { type: 'bid', player: 'p1', auction: 1, amount: 5000 })).toThrow('more than your cash');
   });
 
   it('sells to the top bidder when the clock runs out', () => {
     const state = auctionFor(3);
-    act(state, { type: 'bid', player: 'p3', amount: 30 }, T0 + 1000);
+    act(state, { type: 'bid', player: 'p3', auction: 1, amount: 30 }, T0 + 1000);
     act(state, { type: 'tick' }, T0 + 10_000);
 
     expect(state.props[3]!.owner).toBe('p3');
@@ -132,8 +132,8 @@ describe('auctions', () => {
 
   it('leaves the street unowned when nobody bids', () => {
     const state = auctionFor(2);
-    act(state, { type: 'dropOut', player: 'p1' });
-    act(state, { type: 'dropOut', player: 'p2' });
+    act(state, { type: 'dropOut', player: 'p1', auction: 1 });
+    act(state, { type: 'dropOut', player: 'p2', auction: 1 });
 
     expect(state.props[3]!.owner).toBeNull();
     expect(state.auction).toBeNull();

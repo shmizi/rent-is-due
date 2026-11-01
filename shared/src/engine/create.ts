@@ -116,6 +116,7 @@ export function createGame(input: NewGame): GameState {
     jackpot: jackpotSeed,
     auction: null,
     auctionQueue: [],
+    nextAuctionId: 1,
     debts: [],
     trades: [],
     nextTradeId: 1,

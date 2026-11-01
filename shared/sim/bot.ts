@@ -134,8 +134,8 @@ export function botActions(state: GameState, me: PlayerId, rand: Rand): Action[]
     const bid = auction.highBid + 1 + Math.floor(rand() * 20);
 
     const out: Action[] = [];
-    if (bid <= limit) out.push({ type: 'bid', player: me, amount: bid });
-    out.push({ type: 'dropOut', player: me });
+    if (bid <= limit) out.push({ type: 'bid', player: me, auction: auction.id, amount: bid });
+    out.push({ type: 'dropOut', player: me, auction: auction.id });
     return out;
   }
 

@@ -67,6 +67,7 @@ export class RoomConnection {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private joinName: string | null = null;
+  private token: string | null = null;
   private spectate = false;
   private nextId = 1;
   private nextToast = 1;
@@ -129,8 +130,8 @@ export class RoomConnection {
 
     ws.onopen = () => {
       this.retries = 0;
-      const seat = savedSeat(this.state.code);
-      const hello: ClientMessage = seat ? { t: 'hello', token: seat.token } : { t: 'hello', name: this.joinName ?? '', spectate: this.spectate };
+      const token = this.token ?? savedSeat(this.state.code)?.token;
+      const hello: ClientMessage = token ? { t: 'hello', token } : { t: 'hello', name: this.joinName ?? '', spectate: this.spectate };
       ws.send(JSON.stringify(hello));
       if (this.pingTimer) clearInterval(this.pingTimer);
       this.pingTimer = setInterval(() => ws.readyState === WebSocket.OPEN && ws.send('ping'), 25_000);
@@ -157,7 +158,10 @@ export class RoomConnection {
   private receive(message: ServerMessage): void {
     switch (message.t) {
       case 'welcome': {
-        if (message.you.token) saveSeat(this.state.code, message.you.token, this.joinName ?? '');
+        if (message.you.token) {
+          this.token = message.you.token;
+          saveSeat(this.state.code, message.you.token, this.joinName ?? '');
+        }
         this.set({
           status: 'open',
           you: { id: message.you.id, role: message.you.role },
@@ -200,6 +204,7 @@ export class RoomConnection {
         return;
 
       case 'kicked':
+        this.token = null;
         forgetSeat(this.state.code);
         this.set({ fatal: { code: 'kicked', message: 'The host removed you from this room.' }, status: 'closed' });
         return;
@@ -208,6 +213,7 @@ export class RoomConnection {
 
   private reject(code: string, message: string): void {
     if (code === 'badToken') {
+      this.token = null;
       forgetSeat(this.state.code);
       if (this.joinName) {
         this.ws?.close();
