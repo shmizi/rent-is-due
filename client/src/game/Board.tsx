@@ -41,7 +41,7 @@ export function Board({
   const map = mapFor(game);
   const n = map.spaces.length;
   const k = n / 4;
-  const tracks = `1.6fr repeat(${k - 1}, 1fr) 1.6fr`;
+  const tracks = `2.2fr repeat(${k - 1}, 1fr) 2.2fr`;
 
   const tokensAt = new Map<number, typeof game.players>();
   for (const p of game.players) {
@@ -60,11 +60,9 @@ export function Board({
         const prop = game.props[i];
         const owner = prop?.owner ? memberLook(members, prop.owner) : null;
         const group = space.kind === 'street' ? map.groups[space.group] : null;
-        const rings = [owner ? `inset 0 0 0 3px ${owner.color}` : '', selected === i ? '0 0 0 3px #3DDC97' : ''].filter(Boolean).join(', ');
         const icon = spaceIcon(space.kind, space.name);
-        const price = prop?.mortgaged
-          ? 'Mortgaged'
-          : 'price' in space
+        const ownerName = prop?.owner ? (prop.owner === you ? 'You' : members.find((m) => m.id === prop.owner)?.name ?? '') : '';
+        const price = 'price' in space
             ? money(space.price)
             : space.kind === 'tax'
               ? space.tax.type === 'income'
@@ -85,18 +83,20 @@ export function Board({
             data-space={i}
             data-current={currentHere}
             data-located={focusHere}
+            data-occupied={tokens.length > 0}
             data-side={pos.side}
             data-mortgaged={prop?.mortgaged ? 'true' : 'false'}
-            aria-label={`${space.name}${'price' in space ? `, ${money(space.price)}` : ''}${tokens.length ? `. Players here: ${tokens.map((p) => p.name).join(', ')}` : ''}`}
+            data-owned={owner ? 'true' : 'false'}
+            aria-label={`${space.name}${owner ? `, owned by ${ownerName}${prop?.mortgaged ? ', mortgaged' : ''}` : 'price' in space ? `, ${money(space.price)}` : ''}${tokens.length ? `. Players here: ${tokens.map((p) => p.name).join(', ')}` : ''}`}
             aria-pressed={selected === i}
             onClick={() => onSelect(i)}
-            style={{ gridRow: pos.row, gridColumn: pos.col, boxShadow: rings || undefined, zIndex: selected === i ? 2 : undefined }}
+            style={{ gridRow: pos.row, gridColumn: pos.col, boxShadow: selected === i ? '0 0 0 3px #3DDC97' : undefined, zIndex: selected === i ? 2 : undefined }}
           >
             {pos.side === 'corner' ? (
               <span className="tile-inner items-center justify-center gap-1 p-1">
                 {icon && <Icon path={icon} className="corner-icon text-board-sub" />}
                 <span className="corner-label">{space.name}</span>
-                <span className="corner-sub">{CORNER_SUB[space.kind]}</span>
+                <span className="corner-sub">{space.kind === 'jail' && tokens.some((p) => p.inJail) ? 'In Lockup' : CORNER_SUB[space.kind]}</span>
               </span>
             ) : (
               <span className="tile-inner">
@@ -115,10 +115,21 @@ export function Board({
                   </span>
                 )}
                 <span className="tile-name">{space.name}</span>
-                {price && (
+                {owner ? (
                   <span className="tile-price">
-                    <span>{price}</span>
+                    <span className="tile-owner">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d={TOKEN_PATHS[owner.shape] ?? TOKEN_PATHS.circle} fill={owner.color} stroke="#fff" strokeWidth="3" />
+                      </svg>
+                      <span className="tile-owner-name">{ownerName}</span>
+                    </span>
                   </span>
+                ) : (
+                  price && (
+                    <span className="tile-price">
+                      <span>{price}</span>
+                    </span>
+                  )
                 )}
               </span>
             )}
@@ -134,7 +145,7 @@ export function Board({
           const priority = (id: string) => id === focusedPlayer ? 3 : id === game.turn.player ? 2 : id === you ? 1 : 0;
           const visible = [...players].sort((a, b) => priority(b.id) - priority(a.id)).slice(0, 3).reverse();
           return (
-            <div key={index} className="piece-cell" style={{ gridRow: pos.row, gridColumn: pos.col }}>
+            <div key={index} className="piece-cell" data-side={pos.side} style={{ gridRow: pos.row, gridColumn: pos.col }}>
               <div className="piece-stack">
                 {visible.map((p) => {
                   const look = memberLook(members, p.id);
