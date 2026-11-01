@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { TradeOffer } from '../../../shared/src/types.ts';
-import { clock, money } from '../lib/format.ts';
-import { memberLook } from '../lib/game.ts';
+import { clock, describe, money, spaceName } from '../lib/format.ts';
+import { mapFor, memberLook, playerById } from '../lib/game.ts';
 import { useNow } from '../net/useRoom.ts';
 import { Chat } from '../ui/Chat.tsx';
 import { Icon, UI_ICONS } from '../ui/icons.tsx';
@@ -14,203 +14,177 @@ import { TradeComposer, type TradeDraft } from './TradeComposer.tsx';
 import { Dice, TurnControls, useTurnPrompt } from './TurnControls.tsx';
 import { useGame } from './useGame.ts';
 
-function useMedia(query: string): boolean {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
   useEffect(() => {
-    const list = window.matchMedia(query);
-    const onChange = () => setMatches(list.matches);
-    onChange();
-    list.addEventListener('change', onChange);
-    return () => list.removeEventListener('change', onChange);
-  }, [query]);
-
-  return matches;
+    const query = window.matchMedia('(min-width: 1024px)');
+    const update = () => setWide(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return wide;
 }
 
 type Tab = 'players' | 'card' | 'trades' | 'log' | 'chat';
 
 export function GameScreen() {
-  const { game, room, me } = useGame();
-  const wide = useMedia('(min-width: 1100px)');
-  const roomy = useMedia('(min-width: 1400px)');
+  const { game, room, me, you } = useGame();
+  const wide = useWide();
   const [selected, setSelected] = useState<number | null>(null);
+  const [focusedPlayer, setFocusedPlayer] = useState<string | null>(null);
+  const [locateCount, setLocateCount] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+  const [spaceOpen, setSpaceOpen] = useState(false);
+  const stage = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<TradeDraft | null | false>(false);
   const [tab, setTab] = useState<Tab>('players');
   const [menu, setMenu] = useState(false);
+  const current = playerById(game, game.turn.player)!;
+  const located = playerById(game, focusedPlayer) ?? current;
+  const inspected = focusedPlayer ? located.position : selected ?? game.turn.pendingBuy ?? current.position;
+  const map = mapFor(game);
+  const occupants = game.players.filter((p) => p.status === 'active' && p.position === inspected);
+  const owesMoney = game.debts.some((debt) => debt.debtor === me?.id);
 
-  const openTrade = (draft: TradeDraft | null) => setDraft(draft);
-  const askFor = (index: number) => {
-    const owner = game.props[index]?.owner;
-    if (owner) openTrade({ to: owner, give: { properties: [], cash: 0, jailCards: 0 }, get: { properties: [index], cash: 0, jailCards: 0 } });
+  useEffect(() => {
+    if (!zoomed || !stage.current) return;
+    const tile = stage.current.querySelector<HTMLElement>(`[data-space="${located.position}"]`);
+    if (!tile) return;
+    const tileRect = tile.getBoundingClientRect();
+    const frame = stage.current.getBoundingClientRect();
+    stage.current.scrollTo({
+      left: stage.current.scrollLeft + tileRect.left - frame.left - frame.width / 2 + tileRect.width / 2,
+      top: stage.current.scrollTop + tileRect.top - frame.top - frame.height / 2 + tileRect.height / 2,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
+    });
+  }, [zoomed, focusedPlayer, locateCount, located.position]);
+
+  const locate = (id: string) => {
+    const player = playerById(game, id);
+    if (!player) return;
+    setFocusedPlayer(id);
+    setSelected(player.position);
+    setLocateCount((count) => count + 1);
+    const frame = stage.current?.getBoundingClientRect();
+    if (frame && (frame.top < 0 || frame.bottom > window.innerHeight - (wide ? 16 : 150))) {
+      stage.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
+    }
   };
-  const counter = (offer: TradeOffer) => openTrade({ to: offer.from, give: offer.get, get: offer.give, counterOf: offer.id });
-
   const select = (index: number) => {
     setSelected(index);
-    if (!wide) setTab('card');
+    setFocusedPlayer(null);
+    if (!wide) {
+      setTab('card');
+      setSpaceOpen(true);
+    }
   };
-
-  const card = selected !== null ? <PropertyCard index={selected} onTrade={askFor} /> : <p className="text-sm text-muted">Tap a space on the board to see its card.</p>;
+  const askFor = (index: number) => {
+    const owner = game.props[index]?.owner;
+    if (owner) setDraft({ to: owner, give: { properties: [], cash: 0, jailCards: 0 }, get: { properties: [index], cash: 0, jailCards: 0 } });
+  };
+  const counter = (offer: TradeOffer) => setDraft({ to: offer.from, give: offer.get, get: offer.give, counterOf: offer.id });
+  const card = <PropertyCard index={inspected} onTrade={askFor} />;
   const pendingIncoming = me ? game.trades.filter((t) => t.to === me.id).length : 0;
-
-  const modals = (
-    <>
-      {draft !== false && <TradeComposer draft={draft} onClose={() => setDraft(false)} />}
-      {menu && <GameMenu onClose={() => setMenu(false)} />}
-      {game.status === 'finished' && <GameOver />}
-    </>
-  );
-
-  if (wide) {
-    const header = (
-      <Panel>
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-display text-[22px] font-semibold">{room.mapId === 'harborview' ? 'Harborview' : room.mapId}</span>
-          <Button size="sm" tone="ghost" onClick={() => setMenu(true)} label="Game menu">
-            <Icon path={UI_ICONS.menu} size={16} /> Menu
-          </Button>
-        </div>
-        <p className="mt-1 text-xs text-muted">Room {room.code}</p>
-      </Panel>
-    );
-
-    return (
-      <div className="flex h-full gap-4 p-4">
-        {roomy && (
-          <aside className="flex w-[290px] shrink-0 flex-col gap-4">
-            {header}
-            <Panel title="Game log" className="flex min-h-0 flex-1 flex-col">
-              <LogPanel className="flex-1" />
-            </Panel>
-            <Panel title="Chat" className="flex h-[260px] shrink-0 flex-col">
-              <Chat className="flex-1" />
-            </Panel>
-          </aside>
-        )}
-
-        <main className="flex min-w-0 flex-1 items-center justify-center">
-          <div style={{ width: 'min(100%, calc(100vh - 32px))' }}>
-            <Board game={game} members={room.members} selected={selected} onSelect={select} center={<BoardCenter />} />
-          </div>
-        </main>
-
-        <aside className="flex w-[330px] shrink-0 flex-col gap-4 overflow-y-auto pb-2">
-          {!roomy && header}
-          <Panel title="Players">
-            <PlayersPanel />
-          </Panel>
-          <AuctionPanel />
-          <DebtPanel />
-          {card}
-          <TradesPanel onCompose={() => openTrade(null)} onCounter={counter} />
-          {!roomy && <LogAndChat />}
-        </aside>
-        {modals}
-      </div>
-    );
-  }
-
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'players', label: 'Players' },
-    { id: 'card', label: 'Card' },
+    { id: 'players', label: 'Players' }, { id: 'card', label: 'Space' },
     { id: 'trades', label: pendingIncoming ? `Trades (${pendingIncoming})` : 'Trades' },
-    { id: 'log', label: 'Log' },
-    { id: 'chat', label: 'Chat' }
+    { id: 'log', label: 'Log' }, { id: 'chat', label: 'Chat' }
   ];
 
   return (
-    <div className="mx-auto flex min-h-full max-w-[640px] flex-col">
-      <header className="flex h-14 items-center gap-3 px-4">
-        <div className="flex min-w-0 flex-1 flex-col leading-tight">
-          <span className="font-display text-lg font-semibold">Harborview</span>
-          <span className="text-xs text-muted">Room {room.code}</span>
+    <div className={`play-page ${game.auction ? 'has-auction' : ''}`}>
+      <header className="play-header">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="brand-mark" aria-hidden="true">R<span>→</span></span>
+          <div className="min-w-0">
+            <h1 className="font-display text-xl font-semibold leading-tight">Rent Is Due<span className="hidden text-muted sm:inline"> / {map.name}</span></h1>
+            <p className="mt-1 whitespace-nowrap text-xs text-muted">Room {room.code}<span className="hidden min-[380px]:inline"><span className="mx-2 text-line">•</span>Round {game.round}</span></p>
+          </div>
         </div>
-        {me && (
-          <span className="flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1.5">
-            <Token {...memberLook(room.members, me.id)} size={16} />
-            <span className="money font-semibold text-gold">{money(me.cash)}</span>
-          </span>
-        )}
-        <button type="button" onClick={() => setMenu(true)} aria-label="Game menu" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-panel">
-          <Icon path={UI_ICONS.menu} size={22} />
-        </button>
+        <div className="flex items-center gap-2 sm:gap-4">
+          {me && <div className="balance-chip"><Token {...memberLook(room.members, me.id)} size={28} /><div><span className="hidden text-[10px] font-semibold uppercase tracking-wider text-muted sm:block">Your cash</span><span className="money text-lg font-semibold text-gold">{money(me.cash)}</span></div></div>}
+          <Button tone="ghost" size="sm" onClick={() => setMenu(true)} label="Game menu"><Icon path={UI_ICONS.menu} size={18} /><span className="hidden sm:inline">Menu</span></Button>
+        </div>
       </header>
 
-      <div className="px-2">
-        <Board game={game} members={room.members} selected={selected} onSelect={select} center={<BoardCenter small />} />
-      </div>
+      <div className="play-layout">
+        <main className="play-main">
+          <div className="board-toolbar">
+            <div className="min-w-0"><p className="eyebrow">THE NEIGHBORHOOD</p><p className="font-display text-lg font-semibold">{map.name}</p></div>
+            <div className="flex items-center gap-2">
+              {me?.status === 'active' && <button type="button" className="board-tool find-piece" onClick={() => locate(me.id)}><span aria-hidden="true">◎</span> Find my piece</button>}
+              <button type="button" className="board-tool" aria-pressed={zoomed} onClick={() => setZoomed((value) => !value)} aria-label={zoomed ? 'Fit board to screen' : 'Zoom board'}><span aria-hidden="true">{zoomed ? '−' : '+'}</span><span className="hidden sm:inline">{zoomed ? 'Fit' : 'Zoom'}</span></button>
+            </div>
+          </div>
+          <div className={`board-shell ${zoomed ? 'is-zoomed' : ''}`} ref={stage}>
+            <Board game={game} members={room.members} selected={inspected} onSelect={select} focusedPlayer={focusedPlayer} you={you.id} center={<BoardCenter small={!wide} />} />
+          </div>
+          {zoomed && <p className="mt-2 text-center text-xs text-muted">Scroll or swipe to explore. Find my piece brings you back.</p>}
+          <div className="player-locator" aria-label="Find players on the board">
+            {game.players.filter((p) => p.status === 'active').map((p) => <button type="button" key={p.id} onClick={() => locate(p.id)} aria-label={`Find ${p.name} on the board`} aria-pressed={focusedPlayer === p.id} className="locator-chip"><Token {...memberLook(room.members, p.id)} label={p.name.charAt(0).toUpperCase()} size={26} /><span>{p.id === you.id ? 'You' : p.name}</span>{p.id === game.turn.player && <span className="locator-turn">TURN</span>}</button>)}
+          </div>
+          <div className="space-summary" aria-live="polite">
+            <div className="min-w-0"><span className="eyebrow">{focusedPlayer ? 'PLAYER LOCATION' : selected === null ? 'CURRENT SPACE' : 'SELECTED SPACE'}</span><p className="truncate font-semibold">{spaceName(game, inspected)}</p><p className="mt-1 text-xs text-muted">{occupants.length ? occupants.map((p) => p.id === you.id ? `${p.name} (you)` : p.name).join(' · ') : 'No players here'}</p></div>
+            {!wide && <button type="button" className="board-tool" onClick={() => { setTab('card'); setSpaceOpen(true); }}>Details <span aria-hidden="true">↗</span></button>}
+          </div>
+          <TurnStory />
+        </main>
 
-      <div className="px-4 py-3">
-        <TurnControls compact />
+        <aside className="game-side" id="game-details">
+          {wide && <AuctionPanel />}<DebtPanel />
+          {!wide && <nav className="game-tabs" aria-label="Game panels">{tabs.map((item) => <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</nav>}
+          {(wide || tab === 'players') && <Panel title="Around the board" right={<span className="text-xs text-muted">{game.players.filter((p) => p.status === 'active').length} playing</span>}><PlayersPanel onLocate={locate} /></Panel>}
+          {(wide || tab === 'card') && card}
+          {(wide || tab === 'trades') && <TradesPanel onCompose={() => setDraft(null)} onCounter={counter} />}
+          {wide ? <LogAndChat /> : tab === 'log' ? <Panel title="Game log"><LogPanel className="max-h-[50vh]" /></Panel> : tab === 'chat' ? <Panel title="Chat"><Chat className="h-[40vh]" /></Panel> : null}
+        </aside>
       </div>
-
-      <div className="flex flex-col gap-3 px-4">
-        <AuctionPanel />
-        <DebtPanel />
-      </div>
-
-      <nav className="mt-2 grid grid-cols-5 border-b border-line px-2">
-        {tabs.map((t) => (
-          <button key={t.id} type="button" aria-pressed={tab === t.id} onClick={() => setTab(t.id)} className={`h-11 border-b-[3px] text-[13px] font-semibold ${tab === t.id ? 'border-mint text-text' : 'border-transparent text-muted'}`}>
-            {t.label}
-          </button>
-        ))}
-      </nav>
-
-      <div className="flex-1 px-4 py-3 pb-8">
-        {tab === 'players' && <PlayersPanel />}
-        {tab === 'card' && card}
-        {tab === 'trades' && <TradesPanel onCompose={() => openTrade(null)} onCounter={counter} />}
-        {tab === 'log' && <LogPanel className="max-h-[50vh]" />}
-        {tab === 'chat' && <Chat className="h-[50vh]" />}
-      </div>
-      {modals}
+      {!wide && <div className="mobile-turnbar">
+        {game.auction ? <AuctionPanel /> : <>
+          <TurnControls compact />
+          {owesMoney && <Button className="mt-2 w-full" tone="primary" onClick={() => document.getElementById('game-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Manage debt</Button>}
+        </>}
+      </div>}
+      {!wide && spaceOpen && <Modal title={spaceName(game, inspected)} onClose={() => setSpaceOpen(false)}>{card}</Modal>}
+      {draft !== false && <TradeComposer draft={draft} onClose={() => setDraft(false)} />}
+      {menu && <GameMenu onClose={() => setMenu(false)} />}
+      {game.status === 'finished' && <GameOver />}
     </div>
   );
 }
 
 function LogAndChat() {
   const [view, setView] = useState<'log' | 'chat'>('log');
+  return <Panel className="flex h-[300px] shrink-0 flex-col"><div className="mb-3 flex gap-4">{(['log', 'chat'] as const).map((value) => <button key={value} type="button" aria-pressed={view === value} onClick={() => setView(value)} className={`border-b-2 pb-1 text-[13px] font-semibold ${view === value ? 'border-mint text-text' : 'border-transparent text-muted'}`}>{value === 'log' ? 'Game log' : 'Chat'}</button>)}</div>{view === 'log' ? <LogPanel className="min-h-0 flex-1" /> : <Chat className="min-h-0 flex-1" />}</Panel>;
+}
 
-  return (
-    <Panel className="flex h-[340px] shrink-0 flex-col">
-      <div className="mb-3 flex gap-4">
-        {(['log', 'chat'] as const).map((v) => (
-          <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={`border-b-2 pb-1 text-[13px] font-semibold ${view === v ? 'border-mint text-text' : 'border-transparent text-muted'}`}>
-            {v === 'log' ? 'Game log' : 'Chat'}
-          </button>
-        ))}
-      </div>
-      {view === 'log' ? <LogPanel className="min-h-0 flex-1" /> : <Chat className="min-h-0 flex-1" />}
-    </Panel>
-  );
+function TurnStory() {
+  const { game, state } = useGame();
+  let start = -1;
+  for (let index = state.log.length - 1; index >= 0; index--) {
+    if (state.log[index].type === 'turnStarted') { start = index; break; }
+  }
+  const events = state.log.slice(start + 1);
+  const event = [...events].reverse().find((event) => ['card', 'paid', 'bought', 'auctionWon', 'jailed', 'salary', 'jackpot'].includes(event.type));
+  if (!event) return null;
+  return <div className="turn-story" role="status"><span aria-hidden="true">↳</span><p>{describe(event, game)}</p></div>;
 }
 
 function BoardCenter({ small = false }: { small?: boolean }) {
   const prompt = useTurnPrompt();
-  const { game } = useGame();
+  const { game, room, you } = useGame();
   const now = useNow(1000);
-
-  if (small) {
-    return (
-      <div className="flex flex-col items-center gap-2">
-        {prompt.timer && <span className="rounded-full bg-[#e2d8c2] px-2.5 py-0.5 text-[11px] font-semibold text-board-text">{prompt.timer}</span>}
-        <Dice size={36} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-4 px-[8%] text-board-text">
-      <span className="font-display text-[clamp(20px,3.2cqi,34px)] font-semibold tracking-wide">Harborview</span>
-      {prompt.timer && <span className="rounded-full bg-[#e2d8c2] px-3 py-1 text-xs font-semibold">{prompt.timer} left</span>}
-      {game.settings.jackpot.enabled && <span className="text-xs font-semibold text-board-sub">Jackpot {money(game.jackpot)}</span>}
-      {game.timers.pausedAt !== null && <span className="text-xs font-semibold text-board-sub">Paused for {clock(now - game.timers.pausedAt)}</span>}
-      <Dice size={60} />
-      <TurnControls />
-    </div>
-  );
+  const current = playerById(game, game.turn.player)!;
+  return <div className={`board-center-content ${small ? 'is-small' : ''}`}>
+    <span className="center-kicker">{current.id === you.id ? 'YOUR TURN' : 'ON THE MOVE'}</span>
+    <div className="center-player"><Token {...memberLook(room.members, current.id)} label={current.name.charAt(0).toUpperCase()} size={small ? 34 : 46} /><span>{current.name}</span></div>
+    <span className="center-location">{current.inJail ? 'In Lockup' : `At ${spaceName(game, current.position)}`}</span>
+    <Dice size={small ? 36 : 58} />
+    {prompt.timer && <span className="center-timer">{prompt.timer} left</span>}
+    {game.settings.jackpot.enabled && <span className="center-location">Jackpot {money(game.jackpot)}</span>}
+    {game.timers.pausedAt !== null && <span className="center-location">Paused for {clock(now - game.timers.pausedAt)}</span>}
+    {!small && <TurnControls />}
+  </div>;
 }
 
 function GameMenu({ onClose }: { onClose: () => void }) {

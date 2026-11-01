@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { MemberView } from '../../../shared/src/protocol.ts';
 import type { GameView } from '../../../shared/src/view.ts';
 import { money } from '../lib/format.ts';
@@ -26,13 +26,17 @@ export function Board({
   members,
   selected,
   onSelect,
-  center
+  center,
+  focusedPlayer,
+  you
 }: {
   game: GameView;
   members: MemberView[];
   selected: number | null;
   onSelect: (index: number) => void;
   center: ReactNode;
+  focusedPlayer?: string | null;
+  you?: string;
 }) {
   const map = mapFor(game);
   const n = map.spaces.length;
@@ -46,7 +50,7 @@ export function Board({
   }
 
   return (
-    <div className="board" style={{ gridTemplateColumns: tracks, gridTemplateRows: tracks }}>
+    <div className="board" style={{ gridTemplateColumns: tracks, gridTemplateRows: tracks, '--board-tracks': tracks } as CSSProperties}>
       <div className="board-center relative flex flex-col items-center justify-center" style={{ gridRow: `2 / ${k + 1}`, gridColumn: `2 / ${k + 1}` }}>
         {center}
       </div>
@@ -70,15 +74,20 @@ export function Board({
                 : money(space.tax.amount)
               : null;
         const tokens = tokensAt.get(i) ?? [];
+        const currentHere = tokens.some((p) => p.id === game.turn.player);
+        const focusHere = tokens.some((p) => p.id === focusedPlayer);
 
         return (
           <button
             key={i}
             type="button"
             className="tile"
+            data-space={i}
+            data-current={currentHere}
+            data-located={focusHere}
             data-side={pos.side}
             data-mortgaged={prop?.mortgaged ? 'true' : 'false'}
-            aria-label={`${space.name}${'price' in space ? `, ${money(space.price)}` : ''}`}
+            aria-label={`${space.name}${'price' in space ? `, ${money(space.price)}` : ''}${tokens.length ? `. Players here: ${tokens.map((p) => p.name).join(', ')}` : ''}`}
             aria-pressed={selected === i}
             onClick={() => onSelect(i)}
             style={{ gridRow: pos.row, gridColumn: pos.col, boxShadow: rings || undefined, zIndex: selected === i ? 2 : undefined }}
@@ -114,26 +123,39 @@ export function Board({
               </span>
             )}
 
-            {tokens.length > 0 && (
-              <span className="pointer-events-none absolute inset-0 flex flex-wrap items-center justify-center gap-[2px] p-[6%]">
-                {tokens.map((p) => {
-                  const look = memberLook(members, p.id);
-                  return (
-                    <motion.span key={p.id} layoutId={`token-${p.id}`} transition={{ type: 'spring', stiffness: 260, damping: 26 }} className="token relative">
-                      <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full" aria-hidden="true">
-                        <path d={TOKEN_PATHS[look.shape] ?? TOKEN_PATHS.circle} fill={look.color} stroke="#fff" strokeWidth="2.5" />
-                      </svg>
-                      <span className="relative" style={{ color: inkFor(look.color) }}>
-                        {p.name.charAt(0).toUpperCase()}
-                      </span>
-                    </motion.span>
-                  );
-                })}
-              </span>
-            )}
           </button>
         );
       })}
+
+      <div className="board-pieces" aria-hidden="true">
+        {[...tokensAt.entries()].map(([index, players]) => {
+          const pos = sidePosition(index, n);
+          // Keep the located player and the turn owner visible in a crowded space.
+          const priority = (id: string) => id === focusedPlayer ? 3 : id === game.turn.player ? 2 : id === you ? 1 : 0;
+          const visible = [...players].sort((a, b) => priority(b.id) - priority(a.id)).slice(0, 3).reverse();
+          return (
+            <div key={index} className="piece-cell" style={{ gridRow: pos.row, gridColumn: pos.col }}>
+              <div className="piece-stack">
+                {visible.map((p) => {
+                  const look = memberLook(members, p.id);
+                  const current = p.id === game.turn.player;
+                  const located = p.id === focusedPlayer;
+                  return (
+                    <motion.span key={p.id} layoutId={`token-${p.id}`} transition={{ type: 'spring', stiffness: 240, damping: 25 }}
+                      className="board-piece" data-current={current} data-located={located} data-player={p.id}
+                      style={{ '--piece-color': look.color, zIndex: located ? 5 : current ? 4 : 1 } as CSSProperties}>
+                      {(located || (current && !players.some((player) => player.id === focusedPlayer))) && <span className="piece-flag">{p.id === you ? 'YOU' : current ? 'TURN' : p.name}</span>}
+                      <svg viewBox="0 0 24 24"><path d={TOKEN_PATHS[look.shape] ?? TOKEN_PATHS.circle} fill={look.color} stroke="#fff" strokeWidth="2.5" /></svg>
+                      <span className="piece-initial" style={{ color: inkFor(look.color) }}>{p.name.charAt(0).toUpperCase()}</span>
+                    </motion.span>
+                  );
+                })}
+                {players.length > visible.length && <span className="piece-count">+{players.length - visible.length}</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
