@@ -6,6 +6,19 @@ Multiplayer property-trading game for the browser. Adjustable house rules, sever
 
 No install and no accounts. One person makes a room and sends the link, and everyone joins from their own phone or laptop.
 
+![A game in progress on Harborview: the board, game log, players and a property card](docs/game.png)
+
+<table>
+  <tr>
+    <td width="65%"><img src="docs/lobby.png" alt="The lobby, where the host picks the map and rules"></td>
+    <td width="35%"><img src="docs/phone.png" alt="The game on a phone"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>The lobby: pick a map, a preset, and any house rules</sub></td>
+    <td align="center"><sub>On a phone</sub></td>
+  </tr>
+</table>
+
 ---
 
 ## How to play
