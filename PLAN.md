@@ -16,7 +16,7 @@ The preview's Harborview space names, the card deck names (Dispatch, Wildcard), 
 |---|---|
 | How people play | Online rooms, one device per player, joined by a shared link |
 | Hosting | Free: Cloudflare Workers Free + Durable Objects |
-| Maps | Harborview (40 spaces) in v1. Pocket Town (32) and Metro Sprawl (48) come later. Maps are data files |
+| Maps | Harborview (40 spaces) in v1. Pocket Town (32) and Metro Sprawl (48) come later, plus a World map with real countries as colour sets and real cities as streets. Maps are data files |
 | Look | Cream board in a navy frame, chosen from the Phase 0 preview |
 | Away players | A countdown starts when they disconnect, and other players can vote to extend it. If they aren't back in time, they're removed as if bankrupt to the bank |
 | Bankrupt or departed player's properties | Become unowned again by default. A lobby setting can switch this to auctioning them |
@@ -339,7 +339,7 @@ Workers Free limits as of 2026-11-01, against a rough estimate for a 3-hour, 6-p
 | **2. Room object** | Worker entry, RoomObject, SQLite layout, alarm scheduler, hibernating sockets, tokens, reconnects, per-player views and changes-only updates, votes, host hand-over, pause, rate limits, clean-up | A scripted 6-client game with random disconnects survives forced restarts mid-auction and mid-debt and resumes exactly. Usage per game measured |
 | **3. Client** | Lobby (share link, presets, rules with descriptions and greyed-out combinations, appearance), board, property cards, turn controls, auctions, trades, debt screen, log, chat, spectator view, reconnecting banner, phone layout | A full game is playable on 3+ devices over the local network |
 | **4. Deploy + playtest** | Deploy to Workers Free, then a real game night | Bugs logged, timers tuned, real game lengths recorded |
-| **5. More maps** | Pocket Town and Metro Sprawl, per-map themes, 10 colour sets | Both pass the map checker and get a playtest |
+| **5. More maps** | Pocket Town, Metro Sprawl and a World map (countries as colour sets, cities as streets, airports as the transit stops, a flag badge per set), per-map themes, 10 colour sets | Each passes the map checker and gets a playtest |
 | **6. Extras** | Picked from the deferred list after playtesting | — |
 
 **v1 is phases 0–4.**
