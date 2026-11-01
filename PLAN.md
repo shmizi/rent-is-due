@@ -4,7 +4,7 @@ An original online property-trading board game for a small group of friends. You
 
 It is **not a Monopoly copy**. The space names, card decks, board art and branding are all original.
 
-Status: Phases 0, 1 and 2 are done. The look preview is a design canvas at https://claude.ai/artifact/UT6ub1CstpNoP7G8eqpYDC, and the **chosen look is a cream board in a navy frame** (2026-11-01). The rules engine, Harborview and the simulator are in `shared/`, with results in section 14. The room server is in `worker/`, with results in section 15. The browser client is in `client/`, with results in section 16. Phase 4 (deploy and the first real game night) is next.
+Status: Phases 0–3 are done, and the game is live at **https://rent-is-due.property-game.workers.dev** (deployed 2026-11-01, section 17). The look preview is a design canvas at https://claude.ai/artifact/UT6ub1CstpNoP7G8eqpYDC, and the **chosen look is a cream board in a navy frame** (2026-11-01). The rules engine, Harborview and the simulator are in `shared/`, with results in section 14. The room server is in `worker/`, with results in section 15. The browser client is in `client/`, with results in section 16. What's left of Phase 4 is trying it on real phones and the first real game night.
 
 The preview's Harborview space names, the card deck names (Dispatch, Wildcard), the corner names (Start, Lockup, Plaza, Busted!), the colour-set icons and the rent numbers are drafts. They get finalised in Phase 1.
 
@@ -338,7 +338,7 @@ Workers Free limits as of 2026-11-01, against a rough estimate for a 3-hour, 6-p
 | **1. Engine + Harborview** ✅ | Game state, `applyAction()`, map format and checker, cards, net worth, bankruptcy and leaving, every setting in section 4 with the restrictions in section 5. Unit tests, plus 10,000 simulated bot games checking that: money adds up, nobody has negative cash outside debt, every game ends, and restrictions hold. Actions timed against the 10 ms CPU limit | Done 2026-11-01, see section 14 |
 | **2. Room object** ✅ | Worker entry, RoomObject, SQLite layout, alarm scheduler, hibernating sockets, tokens, reconnects, per-player views and changes-only updates, votes, host hand-over, pause, rate limits, clean-up | Done 2026-11-01, see section 15 |
 | **3. Client** ✅ | Lobby (share link, presets, rules with descriptions and greyed-out combinations, appearance), board, property cards, turn controls, auctions, trades, debt screen, log, chat, spectator view, reconnecting banner, phone layout | Done 2026-11-01 in three real browsers (section 16). Trying it on real phones over Wi-Fi is the first step of Phase 4 |
-| **4. Deploy + playtest** | Deploy to Workers Free, then a real game night | Bugs logged, timers tuned, real game lengths recorded |
+| **4. Deploy + playtest** | Deploy to Workers Free, then a real game night | Deployed 2026-11-01 (section 17). Still to do: bugs logged, timers tuned, real game lengths recorded |
 | **5. More maps** | Pocket Town, Metro Sprawl and a World map (countries as colour sets, cities as streets, airports as the transit stops, a flag badge per set), per-map themes, 10 colour sets | Each passes the map checker and gets a playtest |
 | **6. Extras** | Picked from the deferred list after playtesting | — |
 
@@ -348,11 +348,11 @@ Workers Free limits as of 2026-11-01, against a rough estimate for a 3-hour, 6-p
 
 ## 13. Still to confirm or measure
 
-- Whether the free plan's 10 ms CPU limit applies to Durable Object calls (the Workers and Durable Objects docs differ). Phase 1 keeps every action well under 10 ms anyway.
-- Real usage per game against the free limits (Phase 2).
+- ~~Whether the free plan's 10 ms CPU limit applies to Durable Object calls.~~ It doesn't matter in practice: on the live site every room event used 7 ms of CPU or less (section 17).
+- ~~Real usage per game against the free limits (Phase 2).~~ Measured in section 15.
 - How quickly phones drop the connection in the background, and whether 5 min is the right away timeout (Phase 4).
 - Game length on Harborview (Phases 1 and 4).
-- Repository: this folder currently sits inside a git repository rooted at the user folder (`C:\Users\arudr`). Start a separate repository here before Phase 1.
+- ~~Repository~~: done, github.com/shmizi/rent-is-due.
 
 ---
 
@@ -530,3 +530,44 @@ Screenshots were checked for the desktop board, the phone board, the lobby, prop
 - **Auctions in the browser test:** the test's bots always bought, so no auction ran in the UI. The auction panel is built, and the auction rules are tested in the engine and room tests.
 - **Visual check of the debt screen and Lockup buttons:** both are built, but the test didn't land on them.
 - **Accessibility:** controls are real buttons and switches with labels, but there's been no screen-reader pass.
+
+---
+
+## 17. Deploy results (2026-11-01)
+
+**Live at https://rent-is-due.property-game.workers.dev** on the Cloudflare Workers Free plan, under the account for arudra1030@gmail.com. The `workers.dev` subdomain `property-game` was registered on the first deploy. Its HTTPS certificate took about 4 minutes to reach every Cloudflare server; until then, some requests failed with a TLS handshake error.
+
+**Commands**
+- `npm run deploy`: builds the client and uploads the Worker and the site.
+- `npm run smoke`: four bots and a spectator play a Quick game on the live site over real WebSockets, then the host ends it. It takes about a minute. To aim it elsewhere, pass a URL and an action count: `npm run smoke -- <url> 150`.
+- `npx wrangler tail rent-is-due`: live logs, with CPU and wall time for each event.
+
+### Smoke test (run from this PC)
+- `/` and `/r/CODE` serve the page.
+- `/api/nope` returns 404.
+- Creating a room returns 201.
+- **`/api/rooms/CODE/debug` returns 404**, so nobody can read the full game state.
+- 4 players and a spectator joined in 0.4–0.8 s each, including the WebSocket handshake and welcome.
+- 299 actions were accepted, with no rejects, no timeouts and no out-of-order patches. Every client ended on the same version.
+- Round trip, from sending an action to the patch coming back:
+  - median 215 ms
+  - p90 227 ms
+  - p99 260 ms
+
+  Most of that is the network distance from here.
+- The host's "end game" reached everyone, the spectator included.
+
+### CPU time on Cloudflare (`wrangler tail`, a 150-action run; tail logs a sample of events)
+| Event | Count | CPU median | CPU max | Wall median |
+|---|---|---|---|---|
+| WebSocket message in the room | 47 | 2 ms | 7 ms | 13 ms |
+| Room created (`init`) | 1 | 3 ms | 3 ms | 47 ms |
+| Alarm | 2 | 1–2 ms | 2 ms | 14 ms |
+| Worker routing (`/api`, `/ws`) | 9 | 0 ms | 1 ms | 1–27 ms |
+
+Every event stays under the free plan's 10 ms CPU limit. The 7 ms maximum was a single early message while the room was still warming up; once warm, messages took 1–3 ms.
+
+### Still to do in Phase 4
+1. **Phones:** open the live link on a few phones, both on Wi-Fi and on mobile data. Check the layout, tapping tiles, and how quickly a locked phone drops its connection, then decide whether a 5-minute away timeout is right.
+2. **First game night:** log the bugs, tune the timers, and record how long the game takes.
+3. Still not seen on screen: an auction in the UI, the debt screen and the Lockup buttons. A real game will reach all three.
