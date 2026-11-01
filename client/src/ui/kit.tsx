@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { inkFor } from '../lib/game.ts';
 import { Icon, TOKEN_PATHS, UI_ICONS } from './icons.tsx';
 
@@ -85,21 +85,56 @@ export function Token({ color, shape, label, size = 28 }: { color: string; shape
   );
 }
 
-export function Modal({ title, children, onClose, wide }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+export function useDialog(onClose?: () => void) {
+  const dialog = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.current?.focus();
+    return () => opener?.focus();
+  }, []);
+
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && onClose) {
+      e.stopPropagation();
+      onClose();
+      return;
+    }
+    if (e.key !== 'Tab' || !dialog.current) return;
+    e.stopPropagation();
+
+    const items = Array.from(dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.closest('[role="dialog"]') === dialog.current);
+    if (items.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === dialog.current)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  return { ref: dialog, tabIndex: -1, onKeyDown, role: 'dialog', 'aria-modal': true } as const;
+}
+
+export function Modal({ title, children, onClose, wide }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
+  const dialog = useDialog(onClose);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#060814]/70 sm:items-center" onClick={onClose}>
       <div
-        role="dialog"
-        aria-modal="true"
+        {...dialog}
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className={`max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-line bg-panel p-5 sm:rounded-3xl ${wide ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}
+        className={`max-h-[92vh] w-full overflow-y-auto rounded-t-3xl outline-none border border-line bg-panel p-5 sm:rounded-3xl ${wide ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="font-display text-xl font-semibold">{title}</h2>

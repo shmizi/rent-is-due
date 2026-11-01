@@ -181,6 +181,18 @@ describe('playing', () => {
     expect(room.state().members).toHaveLength(1);
   });
 
+  it('makes only one member from two hellos sent at once on one connection', async () => {
+    const room = TestRoom.create();
+    const conn = room.connect();
+    await Promise.all([conn.say({ t: 'hello', name: 'Sam' }), conn.say({ t: 'hello', name: 'Sam again' })]);
+
+    const { members, meta } = room.state();
+    expect(members).toHaveLength(1);
+    expect(conn.info()!.playerId).toBe(members[0].id);
+    expect(meta!.hostId).toBe(members[0].id);
+    expect(conn.last('reject')!.code).toBe('alreadyJoined');
+  });
+
   it('limits how fast new people can join', async () => {
     const room = TestRoom.create();
     const joined: FakeConn[] = [];

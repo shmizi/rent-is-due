@@ -580,3 +580,12 @@ Every event stays under the free plan's 10 ms CPU limit. The 7 ms maximum was a 
 5. **Pauses:** an away clock or auction started during a pause counts from the moment the pause began. A 5-minute timeout stays 5 minutes after the game resumes.
 
 Also fixed: the room tests now pick the game's seed, so the 6-player test plays the same game every run. Before, about 1 run in 6 never reached an auction. 121 tests pass.
+
+### Second review round (2026-11-01)
+1. **Overlapping hellos:** the "already joined" check now runs again after the async token hash. Two hellos sent at once on one connection make one member, and the host stays that member.
+2. **Blocked storage:** every storage read and write goes through `client/src/lib/storage.ts`, which never throws. I checked the home page, creating a room and joining in Edge with both storages blocked.
+3. **Rooms that are gone:** the server answers a socket for a missing room with a `noRoom` message and close code 4004 (it used to send a plain 404 that the browser couldn't read). The client clears the saved seat and shows "Room CODE has closed" instead of retrying forever. A room closed while idle (code 4001) shows the same screen.
+4. **Mid-size desktops:** from 1100 to 1399 px the game uses two columns. Log and chat move into a tabbed panel under the right sidebar. The board is 722–768 px wide at those sizes, so tile names stay visible. Three columns start at 1400 px.
+5. **Dialogs:** `useDialog` in `kit.tsx` moves focus into the dialog, keeps Tab and Shift+Tab inside it, closes only the innermost dialog on Escape, and returns focus to the button that opened it. The game-over screen uses it too.
+
+125 tests pass.

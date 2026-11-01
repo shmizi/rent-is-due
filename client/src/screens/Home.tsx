@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { navigate } from '../App.tsx';
+import { readStored, writeStored } from '../lib/storage.ts';
 import { Button, Panel } from '../ui/kit.tsx';
 
 export function Home() {
-  const [name, setName] = useState(() => localStorage.getItem('rent-is-due:name') ?? '');
+  const [name, setName] = useState(() => readStored('local', 'rent-is-due:name') ?? '');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -22,8 +23,8 @@ export function Home() {
       const res = await fetch('/api/rooms', { method: 'POST' });
       if (!res.ok) throw new Error();
       const { code: newCode } = (await res.json()) as { code: string };
-      localStorage.setItem('rent-is-due:name', clean);
-      sessionStorage.setItem(`rent-is-due:join:${newCode}`, clean);
+      writeStored('local', 'rent-is-due:name', clean);
+      writeStored('session', `rent-is-due:join:${newCode}`, clean);
       navigate(`/r/${newCode}`);
     } catch {
       setError('Could not create a room. Check your connection and try again.');
@@ -39,8 +40,8 @@ export function Home() {
       return;
     }
     if (name.trim()) {
-      localStorage.setItem('rent-is-due:name', name.trim());
-      sessionStorage.setItem(`rent-is-due:join:${clean}`, name.trim());
+      writeStored('local', 'rent-is-due:name', name.trim());
+      writeStored('session', `rent-is-due:join:${clean}`, name.trim());
     }
     navigate(`/r/${clean}`);
   }

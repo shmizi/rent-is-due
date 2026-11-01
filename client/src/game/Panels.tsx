@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { clock, describe, money, nameOf, spaceName } from '../lib/format.ts';
 import { mapFor, memberLook, mortgageValue, ownedBy, setHasBuildings, worth } from '../lib/game.ts';
 import { useNow, useRoom } from '../net/useRoom.ts';
-import { Button, Confirm, Panel, Token } from '../ui/kit.tsx';
+import { Button, Confirm, Panel, Token, useDialog } from '../ui/kit.tsx';
 import { useGame } from './useGame.ts';
 import type { TradeOffer } from '../../../shared/src/types.ts';
 
@@ -204,10 +204,11 @@ export function GameOver() {
   const { game, room, isHost, connection } = useGame();
   const score = (p: (typeof game.players)[number]) => (game.winners.includes(p.id) ? 2 : p.status === 'active' ? 1 : 0);
   const ranking = [...game.players].sort((a, b) => score(b) - score(a) || (b.status === 'active' ? worth(game, b.id) : 0) - (a.status === 'active' ? worth(game, a.id) : 0));
+  const dialog = useDialog();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#060814]/75 p-4">
-      <div className="w-full max-w-md rounded-3xl border border-line bg-panel p-6 text-center">
+      <div {...dialog} aria-label="Game over" className="w-full max-w-md rounded-3xl border border-line bg-panel p-6 text-center outline-none">
         <p className="text-sm font-semibold text-muted">Game over</p>
         <h2 className="mt-1 font-display text-3xl font-semibold">{game.winners.map((w) => nameOf(game, w)).join(' and ')} won</h2>
         <ul className="mt-5 flex flex-col gap-2 text-left">

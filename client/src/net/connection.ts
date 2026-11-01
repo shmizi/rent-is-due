@@ -2,6 +2,7 @@ import type { ChatMessage, ClientAction, ClientMessage, LobbyOp, Role, RoomView,
 import { applyPatch } from '../../../shared/src/sync.ts';
 import type { GameEvent } from '../../../shared/src/types.ts';
 import type { GameView } from '../../../shared/src/view.ts';
+import { readStored, removeStored, writeStored } from '../lib/storage.ts';
 
 export type Status = 'connecting' | 'open' | 'reconnecting' | 'closed';
 
@@ -36,7 +37,7 @@ export function tokenKey(code: string): string {
 
 export function savedSeat(code: string): { token: string; name: string } | null {
   try {
-    const raw = localStorage.getItem(tokenKey(code));
+    const raw = readStored('local', tokenKey(code));
     return raw ? (JSON.parse(raw) as { token: string; name: string }) : null;
   } catch {
     return null;
@@ -44,19 +45,11 @@ export function savedSeat(code: string): { token: string; name: string } | null 
 }
 
 function saveSeat(code: string, token: string, name: string): void {
-  try {
-    localStorage.setItem(tokenKey(code), JSON.stringify({ token, name }));
-  } catch {
-    // private mode: the seat only lasts for this tab
-  }
+  writeStored('local', tokenKey(code), JSON.stringify({ token, name }));
 }
 
 function forgetSeat(code: string): void {
-  try {
-    localStorage.removeItem(tokenKey(code));
-  } catch {
-    // nothing stored
-  }
+  removeStored('local', tokenKey(code));
 }
 
 export class RoomConnection {
@@ -145,7 +138,11 @@ export class RoomConnection {
     ws.onclose = (event) => {
       if (this.pingTimer) clearInterval(this.pingTimer);
       if (this.ws !== ws) return;
-      if (this.stopped || this.state.fatal || event.code === 4003 || event.code === 4004 || event.code === 4001) {
+      if (event.code === 4004 || event.code === 4001) {
+        this.roomGone(event.code === 4001);
+        return;
+      }
+      if (this.stopped || this.state.fatal || event.code === 4003) {
         this.set({ status: 'closed' });
         return;
       }
@@ -224,7 +221,13 @@ export class RoomConnection {
       return;
     }
 
-    if (['noRoom', 'roomFull', 'gameStarted'].includes(code)) {
+    if (code === 'noRoom') {
+      this.roomGone(false);
+      this.ws?.close();
+      return;
+    }
+
+    if (['roomFull', 'gameStarted'].includes(code)) {
       this.set({ fatal: { code, message }, status: 'closed' });
       this.ws?.close();
       return;
@@ -235,6 +238,16 @@ export class RoomConnection {
     }
 
     this.toast(message, 'error');
+  }
+
+  private roomGone(idle: boolean): void {
+    if (this.state.fatal) return;
+    this.token = null;
+    forgetSeat(this.state.code);
+    const message = idle
+      ? 'This room closed after nobody used it for a while. Start a new one from the home page.'
+      : 'This room doesn’t exist any more. Rooms close after a day in the lobby, or two weeks of no play.';
+    this.set({ fatal: { code: 'noRoom', message }, status: 'closed', needsName: false });
   }
 
   toast(text: string, tone: Toast['tone'] = 'info'): void {

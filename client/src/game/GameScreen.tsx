@@ -14,25 +14,26 @@ import { TradeComposer, type TradeDraft } from './TradeComposer.tsx';
 import { Dice, TurnControls, useTurnPrompt } from './TurnControls.tsx';
 import { useGame } from './useGame.ts';
 
-function useWide(): boolean {
-  const query = '(min-width: 1100px)';
-  const [wide, setWide] = useState(() => window.matchMedia(query).matches);
+function useMedia(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
 
   useEffect(() => {
     const list = window.matchMedia(query);
-    const onChange = () => setWide(list.matches);
+    const onChange = () => setMatches(list.matches);
+    onChange();
     list.addEventListener('change', onChange);
     return () => list.removeEventListener('change', onChange);
-  }, []);
+  }, [query]);
 
-  return wide;
+  return matches;
 }
 
 type Tab = 'players' | 'card' | 'trades' | 'log' | 'chat';
 
 export function GameScreen() {
   const { game, room, me } = useGame();
-  const wide = useWide();
+  const wide = useMedia('(min-width: 1100px)');
+  const roomy = useMedia('(min-width: 1400px)');
   const [selected, setSelected] = useState<number | null>(null);
   const [draft, setDraft] = useState<TradeDraft | null | false>(false);
   const [tab, setTab] = useState<Tab>('players');
@@ -62,25 +63,31 @@ export function GameScreen() {
   );
 
   if (wide) {
+    const header = (
+      <Panel>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-display text-[22px] font-semibold">{room.mapId === 'harborview' ? 'Harborview' : room.mapId}</span>
+          <Button size="sm" tone="ghost" onClick={() => setMenu(true)} label="Game menu">
+            <Icon path={UI_ICONS.menu} size={16} /> Menu
+          </Button>
+        </div>
+        <p className="mt-1 text-xs text-muted">Room {room.code}</p>
+      </Panel>
+    );
+
     return (
       <div className="flex h-full gap-4 p-4">
-        <aside className="flex w-[290px] shrink-0 flex-col gap-4">
-          <Panel>
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-display text-[22px] font-semibold">{room.mapId === 'harborview' ? 'Harborview' : room.mapId}</span>
-              <Button size="sm" tone="ghost" onClick={() => setMenu(true)} label="Game menu">
-                <Icon path={UI_ICONS.menu} size={16} /> Menu
-              </Button>
-            </div>
-            <p className="mt-1 text-xs text-muted">Room {room.code}</p>
-          </Panel>
-          <Panel title="Game log" className="flex min-h-0 flex-1 flex-col">
-            <LogPanel className="flex-1" />
-          </Panel>
-          <Panel title="Chat" className="flex h-[260px] shrink-0 flex-col">
-            <Chat className="flex-1" />
-          </Panel>
-        </aside>
+        {roomy && (
+          <aside className="flex w-[290px] shrink-0 flex-col gap-4">
+            {header}
+            <Panel title="Game log" className="flex min-h-0 flex-1 flex-col">
+              <LogPanel className="flex-1" />
+            </Panel>
+            <Panel title="Chat" className="flex h-[260px] shrink-0 flex-col">
+              <Chat className="flex-1" />
+            </Panel>
+          </aside>
+        )}
 
         <main className="flex min-w-0 flex-1 items-center justify-center">
           <div style={{ width: 'min(100%, calc(100vh - 32px))' }}>
@@ -89,6 +96,7 @@ export function GameScreen() {
         </main>
 
         <aside className="flex w-[330px] shrink-0 flex-col gap-4 overflow-y-auto pb-2">
+          {!roomy && header}
           <Panel title="Players">
             <PlayersPanel />
           </Panel>
@@ -96,6 +104,7 @@ export function GameScreen() {
           <DebtPanel />
           {card}
           <TradesPanel onCompose={() => openTrade(null)} onCounter={counter} />
+          {!roomy && <LogAndChat />}
         </aside>
         {modals}
       </div>
@@ -158,6 +167,23 @@ export function GameScreen() {
       </div>
       {modals}
     </div>
+  );
+}
+
+function LogAndChat() {
+  const [view, setView] = useState<'log' | 'chat'>('log');
+
+  return (
+    <Panel className="flex h-[340px] shrink-0 flex-col">
+      <div className="mb-3 flex gap-4">
+        {(['log', 'chat'] as const).map((v) => (
+          <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={`border-b-2 pb-1 text-[13px] font-semibold ${view === v ? 'border-mint text-text' : 'border-transparent text-muted'}`}>
+            {v === 'log' ? 'Game log' : 'Chat'}
+          </button>
+        ))}
+      </div>
+      {view === 'log' ? <LogPanel className="min-h-0 flex-1" /> : <Chat className="min-h-0 flex-1" />}
+    </Panel>
   );
 }
 

@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import type { ServerMessage } from '../../shared/src/protocol.ts';
 import type { Conn, ConnInfo, RoomHost, SqlValue } from './core/host.ts';
 import { RoomCore } from './core/room.ts';
 
@@ -69,7 +70,13 @@ export class RoomObject extends DurableObject<Env> {
 
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
-    if (!this.core.exists()) return new Response('No such room', { status: 404 });
+    if (!this.core.exists()) {
+      const pair = new WebSocketPair();
+      pair[1].accept();
+      pair[1].send(JSON.stringify({ t: 'reject', code: 'noRoom', message: 'This room does not exist.' } satisfies ServerMessage));
+      pair[1].close(4004, 'No such room');
+      return new Response(null, { status: 101, webSocket: pair[0] });
+    }
 
     const pair = new WebSocketPair();
     this.ctx.acceptWebSocket(pair[1]);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { navigate } from '../App.tsx';
+import { readStored, removeStored, writeStored } from '../lib/storage.ts';
 import { GameScreen } from '../game/GameScreen.tsx';
 import { Lobby } from '../lobby/Lobby.tsx';
 import { RoomContext, useConnection, useRoom, useRoomConnection } from '../net/useRoom.ts';
@@ -32,7 +33,7 @@ function RoomRouter({ code }: { code: string }) {
     return (
       <Centered>
         <Panel>
-          <h1 className="font-display text-2xl font-semibold">{state.fatal.code === 'kicked' ? 'You were removed' : 'You can’t join this room'}</h1>
+          <h1 className="font-display text-2xl font-semibold">{state.fatal.code === 'kicked' ? 'You were removed' : state.fatal.code === 'noRoom' ? `Room ${code} has closed` : 'You can’t join this room'}</h1>
           <p className="mt-2 text-soft">{state.fatal.message}</p>
           <Button tone="primary" className="mt-4" onClick={() => navigate('/')}>
             Back to the start
@@ -66,15 +67,15 @@ function RoomRouter({ code }: { code: string }) {
 
 function JoinPrompt({ code }: { code: string }) {
   const connection = useConnection();
-  const queued = useRef(sessionStorage.getItem(`rent-is-due:join:${code}`));
-  const [name, setName] = useState(() => queued.current ?? localStorage.getItem('rent-is-due:name') ?? '');
+  const queued = useRef(readStored('session', `rent-is-due:join:${code}`));
+  const [name, setName] = useState(() => queued.current ?? readStored('local', 'rent-is-due:name') ?? '');
   const [info, setInfo] = useState<RoomInfo | null>(null);
 
   useEffect(() => {
     const auto = queued.current;
     if (!auto) return;
     queued.current = null;
-    sessionStorage.removeItem(`rent-is-due:join:${code}`);
+    removeStored('session', `rent-is-due:join:${code}`);
     connection.join(auto, false);
   }, [code, connection]);
 
@@ -107,7 +108,7 @@ function JoinPrompt({ code }: { code: string }) {
     e.preventDefault();
     const clean = name.trim();
     if (!clean) return;
-    localStorage.setItem('rent-is-due:name', clean);
+    writeStored('local', 'rent-is-due:name', clean);
     connection.join(clean, spectate);
   }
 

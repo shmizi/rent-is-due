@@ -459,15 +459,17 @@ export class RoomCore {
   }
 
   private async hello(conn: Conn, message: Extract<ClientMessage, { t: 'hello' }>): Promise<void> {
-    if (typeof message.token === 'string' && message.token.length > 0) {
-      const hash = await sha256(message.token);
-      this.resume(conn, hash);
+    const resuming = typeof message.token === 'string' && message.token.length > 0;
+    const token = resuming ? message.token! : randomHex(32);
+    const hash = await sha256(token);
+
+    if (conn.info()) {
+      this.reject(conn, undefined, 'alreadyJoined', 'This connection has already joined.');
       return;
     }
 
-    const token = randomHex(32);
-    const hash = await sha256(token);
-    this.join(conn, message, token, hash);
+    if (resuming) this.resume(conn, hash);
+    else this.join(conn, message, token, hash);
   }
 
   private resume(conn: Conn, hash: string): void {
