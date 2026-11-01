@@ -1,18 +1,13 @@
 import { useEffect, useState } from 'react';
 import { MAPS } from '../../../shared/src/maps/index.ts';
 import { PLAYER_COLORS, TOKEN_SHAPES, type MemberView } from '../../../shared/src/protocol.ts';
-import type { Settings } from '../../../shared/src/types.ts';
+import type { MapDef, Settings } from '../../../shared/src/types.ts';
 import { useConnection, useRoom } from '../net/useRoom.ts';
 import { Chat } from '../ui/Chat.tsx';
+import { Flag } from '../ui/Flag.tsx';
 import { Icon, TOKEN_PATHS, UI_ICONS } from '../ui/icons.tsx';
 import { Button, CopyLink, Panel, Toggle, Token } from '../ui/kit.tsx';
 import { houseRulesOn, isHouseRule, SECTIONS, type RuleRow } from './rules.ts';
-
-const UPCOMING = [
-  { name: 'Pocket Town', meta: '32 spaces, coming later' },
-  { name: 'Metro Sprawl', meta: '48 spaces, coming later' },
-  { name: 'World', meta: 'Real countries and cities, coming later' }
-];
 
 export function Lobby() {
   const connection = useConnection();
@@ -68,18 +63,20 @@ export function Lobby() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="flex flex-col gap-2 rounded-2xl border-2 border-mint bg-panel px-4 py-3">
-            <Swatches colors={Object.values(map.groups).map((g) => g.color)} />
-            <span className="font-display text-lg font-semibold">{map.name}</span>
-            <span className="text-xs text-muted">{map.spaces.length} spaces, {Object.keys(map.groups).length} colour sets</span>
-          </div>
-          {UPCOMING.map((m) => (
-            <div key={m.name} className="flex flex-col gap-2 rounded-2xl border border-line bg-panel px-4 py-3 text-[#7d83ad]">
-              <Swatches colors={Array(8).fill('#4a4f78')} />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {Object.values(MAPS).map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              disabled={!isHost}
+              aria-pressed={m.id === map.id}
+              onClick={() => m.id !== map.id && connection.lobby({ op: 'map', mapId: m.id })}
+              className={`flex flex-col gap-2 rounded-2xl bg-panel px-4 py-3 text-left disabled:cursor-default ${m.id === map.id ? 'border-2 border-mint' : 'border border-line hover:border-muted'}`}
+            >
+              <MapBadges map={m} />
               <span className="font-display text-lg font-semibold">{m.name}</span>
-              <span className="text-xs">{m.meta}</span>
-            </div>
+              <span className="text-xs text-muted">{m.spaces.length} spaces, {Object.keys(m.groups).length} {Object.values(m.groups).every((g) => g.flag) ? 'countries' : 'colour sets'}</span>
+            </button>
           ))}
         </div>
 
@@ -118,12 +115,13 @@ export function Lobby() {
   );
 }
 
-function Swatches({ colors }: { colors: string[] }) {
+function MapBadges({ map }: { map: MapDef }) {
+  const groups = Object.values(map.groups);
   return (
-    <span className="flex gap-[3px]">
-      {colors.map((c, i) => (
-        <span key={i} className="h-2 w-4 rounded-sm" style={{ background: c }} />
-      ))}
+    <span className="flex flex-wrap gap-[3px]">
+      {groups.map((g) =>
+        g.flag ? <Flag key={g.name} code={g.flag} size={18} className="rounded-full shadow-[0_0_0_1px_rgba(255,255,255,.5)]" /> : <span key={g.name} className="h-2 w-4 rounded-sm" style={{ background: g.color }} />
+      )}
     </span>
   );
 }

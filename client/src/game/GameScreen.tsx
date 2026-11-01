@@ -14,22 +14,24 @@ import { TradeComposer, type TradeDraft } from './TradeComposer.tsx';
 import { Dice, TurnControls, useTurnPrompt } from './TurnControls.tsx';
 import { useGame } from './useGame.ts';
 
-function useWide(): boolean {
-  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+function useMedia(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
-    const query = window.matchMedia('(min-width: 1024px)');
-    const update = () => setWide(query.matches);
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
-  return wide;
+    const list = window.matchMedia(query);
+    const update = () => setMatches(list.matches);
+    update();
+    list.addEventListener('change', update);
+    return () => list.removeEventListener('change', update);
+  }, [query]);
+  return matches;
 }
 
 type Tab = 'players' | 'card' | 'trades' | 'log' | 'chat';
 
 export function GameScreen() {
   const { game, room, me, you } = useGame();
-  const wide = useWide();
+  const wide = useMedia('(min-width: 1024px)');
+  const roomy = useMedia('(min-width: 1280px)');
   const [selected, setSelected] = useState<number | null>(null);
   const [focusedPlayer, setFocusedPlayer] = useState<string | null>(null);
   const [locateCount, setLocateCount] = useState(0);
@@ -85,6 +87,11 @@ export function GameScreen() {
   const counter = (offer: TradeOffer) => setDraft({ to: offer.from, give: offer.get, get: offer.give, counterOf: offer.id });
   const card = <PropertyCard index={inspected} onTrade={askFor} />;
   const pendingIncoming = me ? game.trades.filter((t) => t.to === me.id).length : 0;
+  const locator = (
+    <div className="player-locator" aria-label="Find players on the board">
+      {game.players.filter((p) => p.status === 'active').map((p) => <button type="button" key={p.id} onClick={() => locate(p.id)} aria-label={`Find ${p.name} on the board`} aria-pressed={focusedPlayer === p.id} className="locator-chip"><Token {...memberLook(room.members, p.id)} label={p.name.charAt(0).toUpperCase()} size={26} /><span>{p.id === you.id ? 'You' : p.name}</span>{p.id === game.turn.player && <span className="locator-turn">TURN</span>}</button>)}
+    </div>
+  );
   const tabs: { id: Tab; label: string }[] = [
     { id: 'players', label: 'Players' }, { id: 'card', label: 'Space' },
     { id: 'trades', label: pendingIncoming ? `Trades (${pendingIncoming})` : 'Trades' },
@@ -92,8 +99,8 @@ export function GameScreen() {
   ];
 
   return (
-    <div className={`play-page ${game.auction ? 'has-auction' : ''}`}>
-      <header className="play-header">
+    <div className={`play-page ${game.auction ? 'has-auction' : ''} ${roomy ? 'is-roomy' : ''}`}>
+      {!roomy && <header className="play-header">
         <div className="flex min-w-0 items-center gap-3">
           <span className="brand-mark" aria-hidden="true">R<span>→</span></span>
           <div className="min-w-0">
@@ -105,12 +112,32 @@ export function GameScreen() {
           {me && <div className="balance-chip"><Token {...memberLook(room.members, me.id)} size={28} /><div><span className="hidden text-[10px] font-semibold uppercase tracking-wider text-muted sm:block">Your cash</span><span className="money text-lg font-semibold text-gold">{money(me.cash)}</span></div></div>}
           <Button tone="ghost" size="sm" onClick={() => setMenu(true)} label="Game menu"><Icon path={UI_ICONS.menu} size={18} /><span className="hidden sm:inline">Menu</span></Button>
         </div>
-      </header>
+      </header>}
 
       <div className="play-layout">
+        {roomy && (
+          <aside className="game-left">
+            <Panel>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h1 className="font-display text-2xl font-semibold leading-tight">Rent Is Due</h1>
+                  <p className="mt-1 text-xs text-muted">{map.name} · Room {room.code} · Round {game.round}</p>
+                </div>
+                <Button tone="ghost" size="sm" onClick={() => setMenu(true)} label="Game menu"><Icon path={UI_ICONS.menu} size={18} /> Menu</Button>
+              </div>
+              {me && <div className="balance-chip mt-3"><Token {...memberLook(room.members, me.id)} size={28} /><div><span className="block text-[10px] font-semibold uppercase tracking-wider text-muted">Your cash</span><span className="money text-lg font-semibold text-gold">{money(me.cash)}</span></div></div>}
+            </Panel>
+            <Panel title="Invite friends">
+              <CopyLink url={`${location.origin}/r/${room.code}`} />
+            </Panel>
+            <Panel title="Chat" className="flex min-h-0 flex-1 flex-col">
+              <Chat className="min-h-0 flex-1" />
+            </Panel>
+          </aside>
+        )}
         <main className="play-main">
           <div className="board-toolbar">
-            <div className="min-w-0"><p className="eyebrow">THE NEIGHBORHOOD</p><p className="font-display text-lg font-semibold">{map.name}</p></div>
+            {roomy ? locator : <div className="min-w-0"><p className="eyebrow">THE MAP</p><p className="font-display text-lg font-semibold">{map.name}</p></div>}
             <div className="flex items-center gap-2">
               {me?.status === 'active' && <button type="button" className="board-tool find-piece" onClick={() => locate(me.id)}><span aria-hidden="true">◎</span> Find my piece</button>}
               <button type="button" className="board-tool" aria-pressed={zoomed} onClick={() => setZoomed((value) => !value)} aria-label={zoomed ? 'Fit board to screen' : 'Zoom board'}><span aria-hidden="true">{zoomed ? '−' : '+'}</span><span className="hidden sm:inline">{zoomed ? 'Fit' : 'Zoom'}</span></button>
@@ -120,14 +147,16 @@ export function GameScreen() {
             <Board game={game} members={room.members} selected={inspected} onSelect={select} focusedPlayer={focusedPlayer} you={you.id} center={<BoardCenter small={!wide} />} />
           </div>
           {zoomed && <p className="mt-2 text-center text-xs text-muted">Scroll or swipe to explore. Find my piece brings you back.</p>}
-          <div className="player-locator" aria-label="Find players on the board">
-            {game.players.filter((p) => p.status === 'active').map((p) => <button type="button" key={p.id} onClick={() => locate(p.id)} aria-label={`Find ${p.name} on the board`} aria-pressed={focusedPlayer === p.id} className="locator-chip"><Token {...memberLook(room.members, p.id)} label={p.name.charAt(0).toUpperCase()} size={26} /><span>{p.id === you.id ? 'You' : p.name}</span>{p.id === game.turn.player && <span className="locator-turn">TURN</span>}</button>)}
-          </div>
-          <div className="space-summary" aria-live="polite">
-            <div className="min-w-0"><span className="eyebrow">{focusedPlayer ? 'PLAYER LOCATION' : selected === null ? 'CURRENT SPACE' : 'SELECTED SPACE'}</span><p className="truncate font-semibold">{spaceName(game, inspected)}</p><p className="mt-1 text-xs text-muted">{occupants.length ? occupants.map((p) => p.id === you.id ? `${p.name} (you)` : p.name).join(' · ') : 'No players here'}</p></div>
-            {!wide && <button type="button" className="board-tool" onClick={() => { setTab('card'); setSpaceOpen(true); }}>Details <span aria-hidden="true">↗</span></button>}
-          </div>
-          <TurnStory />
+          {!roomy && locator}
+          {!wide && (
+            <>
+              <div className="space-summary" aria-live="polite">
+                <div className="min-w-0"><span className="eyebrow">{focusedPlayer ? 'PLAYER LOCATION' : selected === null ? 'CURRENT SPACE' : 'SELECTED SPACE'}</span><p className="truncate font-semibold">{spaceName(game, inspected)}</p><p className="mt-1 text-xs text-muted">{occupants.length ? occupants.map((p) => p.id === you.id ? `${p.name} (you)` : p.name).join(' · ') : 'No players here'}</p></div>
+                <button type="button" className="board-tool" onClick={() => { setTab('card'); setSpaceOpen(true); }}>Details <span aria-hidden="true">↗</span></button>
+              </div>
+              <TurnStory />
+            </>
+          )}
         </main>
 
         <aside className="game-side" id="game-details">
@@ -136,7 +165,14 @@ export function GameScreen() {
           {(wide || tab === 'players') && <Panel title="Around the board" right={<span className="text-xs text-muted">{game.players.filter((p) => p.status === 'active').length} playing</span>}><PlayersPanel onLocate={locate} /></Panel>}
           {(wide || tab === 'card') && card}
           {(wide || tab === 'trades') && <TradesPanel onCompose={() => setDraft(null)} onCounter={counter} />}
-          {wide ? <LogAndChat /> : tab === 'log' ? <Panel title="Game log"><LogPanel className="max-h-[50vh]" /></Panel> : tab === 'chat' ? <Panel title="Chat"><Chat className="h-[40vh]" /></Panel> : null}
+          {wide && !roomy && (
+            <>
+              <Panel title="Invite friends"><CopyLink url={`${location.origin}/r/${room.code}`} /></Panel>
+              <Panel title="Chat" className="flex h-[300px] shrink-0 flex-col"><Chat className="min-h-0 flex-1" /></Panel>
+            </>
+          )}
+          {!wide && tab === 'log' && <Panel title="Game log"><LogPanel className="max-h-[50vh]" /></Panel>}
+          {!wide && tab === 'chat' && <Panel title="Chat"><Chat className="h-[40vh]" /></Panel>}
         </aside>
       </div>
       {!wide && <div className="mobile-turnbar">
@@ -153,9 +189,25 @@ export function GameScreen() {
   );
 }
 
-function LogAndChat() {
-  const [view, setView] = useState<'log' | 'chat'>('log');
-  return <Panel className="flex h-[300px] shrink-0 flex-col"><div className="mb-3 flex gap-4">{(['log', 'chat'] as const).map((value) => <button key={value} type="button" aria-pressed={view === value} onClick={() => setView(value)} className={`border-b-2 pb-1 text-[13px] font-semibold ${view === value ? 'border-mint text-text' : 'border-transparent text-muted'}`}>{value === 'log' ? 'Game log' : 'Chat'}</button>)}</div>{view === 'log' ? <LogPanel className="min-h-0 flex-1" /> : <Chat className="min-h-0 flex-1" />}</Panel>;
+function CenterLog() {
+  const { game, room, state } = useGame();
+  const lines = state.log
+    .map((event, i) => ({ event, i, text: describe(event, game) }))
+    .filter((l) => l.text && l.event.type !== 'rolled')
+    .reverse()
+    .slice(0, 40);
+  if (lines.length === 0) return null;
+
+  return (
+    <div className="center-log" aria-label="Game log">
+      {lines.map(({ event, i, text }, n) => (
+        <p key={i} style={{ opacity: Math.max(0.35, 1 - n * 0.12) }}>
+          <span className="center-log-dot" style={{ background: event.player ? memberLook(room.members, event.player).color : '#8a806a' }} />
+          {text}
+        </p>
+      ))}
+    </div>
+  );
 }
 
 function TurnStory() {
@@ -176,14 +228,13 @@ function BoardCenter({ small = false }: { small?: boolean }) {
   const now = useNow(1000);
   const current = playerById(game, game.turn.player)!;
   return <div className={`board-center-content ${small ? 'is-small' : ''}`}>
-    <span className="center-kicker">{current.id === you.id ? 'YOUR TURN' : 'ON THE MOVE'}</span>
-    <div className="center-player"><Token {...memberLook(room.members, current.id)} label={current.name.charAt(0).toUpperCase()} size={small ? 34 : 46} /><span>{current.name}</span></div>
-    <span className="center-location">{current.inJail ? 'In Lockup' : `At ${spaceName(game, current.position)}`}</span>
-    <Dice size={small ? 36 : 58} />
-    {prompt.timer && <span className="center-timer">{prompt.timer} left</span>}
+    <div className="center-player"><Token {...memberLook(room.members, current.id)} label={current.name.charAt(0).toUpperCase()} size={small ? 30 : 34} /><span>{current.id === you.id ? 'Your turn' : current.name}</span>{prompt.timer && <span className="center-timer">{prompt.timer}</span>}</div>
+    {!small && <span className="center-location">{current.inJail ? 'At the Visa Office' : `At ${spaceName(game, current.position)}`}</span>}
+    <Dice size={small ? 36 : 'var(--die-size)'} />
     {game.settings.jackpot.enabled && <span className="center-location">Jackpot {money(game.jackpot)}</span>}
     {game.timers.pausedAt !== null && <span className="center-location">Paused for {clock(now - game.timers.pausedAt)}</span>}
     {!small && <TurnControls />}
+    {!small && <CenterLog />}
   </div>;
 }
 

@@ -1,15 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { DECKS } from '../src/cards.ts';
 import { checkMap } from '../src/maps/checkMap.ts';
-import { HARBORVIEW } from '../src/maps/harborview.ts';
+import { WORLD } from '../src/maps/world.ts';
+import { WORLD_TOUR } from '../src/maps/worldTour.ts';
+import { HARBORVIEW } from './harborview.ts';
 import { groupStreets } from '../src/engine/helpers.ts';
 import { CLASSIC, normalizeSettings, QUICK } from '../src/settings.ts';
 import type { MapDef } from '../src/types.ts';
 import { newGame } from './support.ts';
 
-describe('Harborview map', () => {
-  it('passes the map checker', () => {
-    expect(checkMap(HARBORVIEW, DECKS)).toEqual([]);
+describe('maps', () => {
+  it('passes the map checker for World and World Tour', () => {
+    expect(checkMap(WORLD, DECKS)).toEqual([]);
+    expect(checkMap(WORLD_TOUR, DECKS)).toEqual([]);
+  });
+
+  it('flags a card that sends players to a city the map does not have', () => {
+    expect(checkMap(HARBORVIEW, DECKS).join('\n')).toContain('sends players to Jerusalem, which is not on this map');
   });
 
   it('has the rent ladder the map file describes', () => {

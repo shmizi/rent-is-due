@@ -10,7 +10,7 @@ export const SET_ICONS: Record<string, string> = {
 };
 
 export const SPACE_ICONS: Record<string, string> = {
-  transit: 'M3 15l2 4h14l2-4H3zM6 15V9h12v6M9 9V6h6v3',
+  transit: 'M21 15.5v-2L13 9V4a1.5 1.5 0 0 0-3 0v5l-8 4.5v2l8-2.5v4.5l-2.5 1.8V21l4-1 4 1v-1.7L13 17.5V13z',
   power: 'M13 3L5 14h6l-1 7 8-11h-6l1-7z',
   water: 'M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z',
   wildcard: 'M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6z',

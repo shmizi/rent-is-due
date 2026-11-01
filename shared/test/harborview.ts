@@ -1,4 +1,4 @@
-import type { MapDef, SpaceDef } from '../types.ts';
+import type { MapDef, SpaceDef } from '../src/types.ts';
 
 function roundRent(value: number): number {
   return value < 50 ? value : Math.round(value / 5) * 5;

@@ -4,7 +4,7 @@ An original online property-trading board game for a small group of friends. You
 
 It is **not a Monopoly copy**. The space names, card decks, board art and branding are all original.
 
-Status: Phases 0–3 are done, and the game is live at **https://rent-is-due.property-game.workers.dev** (deployed 2026-11-01, section 17). The look preview is a design canvas at https://claude.ai/artifact/UT6ub1CstpNoP7G8eqpYDC, and the **chosen look is a cream board in a navy frame** (2026-11-01). The rules engine, Harborview and the simulator are in `shared/`, with results in section 14. The room server is in `worker/`, with results in section 15. The browser client is in `client/`, with results in section 16. What's left of Phase 4 is trying it on real phones and the first real game night.
+Status: Phases 0–3 are done, and the game is live at **https://rent-is-due.property-game.workers.dev** (deployed 2026-11-01, section 17). The look preview is a design canvas at https://claude.ai/artifact/UT6ub1CstpNoP7G8eqpYDC, and the **chosen look is a cream board in a navy frame** (2026-11-01). The rules engine and the simulator are in `shared/`, with results in section 14. The game now ships two real-world maps, World and World Tour, instead of Harborview (section 18). The room server is in `worker/`, with results in section 15. The browser client is in `client/`, with results in section 16. What's left of Phase 4 is trying it on real phones and the first real game night.
 
 The preview's Harborview space names, the card deck names (Dispatch, Wildcard), the corner names (Start, Lockup, Plaza, Busted!), the colour-set icons and the rent numbers are drafts. They get finalised in Phase 1.
 
@@ -589,3 +589,52 @@ Also fixed: the room tests now pick the game's seed, so the 6-player test plays 
 5. **Dialogs:** `useDialog` in `kit.tsx` moves focus into the dialog, keeps Tab and Shift+Tab inside it, closes only the innermost dialog on Escape, and returns focus to the button that opened it. The game-over screen uses it too.
 
 125 tests pass.
+
+
+---
+
+## 18. World maps and the new board look (2026-11-01)
+
+### Maps
+Harborview is gone from the game. It's kept only as a test fixture in `shared/test/harborview.ts`, because the engine tests are written around its exact prices and positions.
+
+| Map | File | Spaces | Countries (cities) |
+|---|---|---|---|
+| **World** (default) | `shared/src/maps/world.ts` | 40, 22 cities | Brazil (2), India (3), China (3), Italy (3), Israel (3), Japan (2), United Kingdom (3), United States (3) |
+| **World Tour** | `shared/src/maps/worldTour.ts` | 48, 30 cities | Brazil (3), India (4), Russia (2), China (3), Italy (3), Israel (3), France (2), Japan (2), United Kingdom (4), United States (4) |
+
+- **Cities:** from the user's list, cheapest to priciest.
+- **World is the 8-country cut:** it drops Russia and France and the cheapest city of Brazil, India, the UK and the US. It keeps every city a card sends you to.
+- **Airports:** Dubai, Singapore, Istanbul and Sydney.
+- **Utilities:** Power Grid and Hotel Wi-Fi.
+- **Taxes:** Departure Tax (10% of cash) and Customs ($100).
+- **Corners:** Start, Visa Office (the jail), Layover (the free stop) and Deported! (go to jail).
+- **Shared country data:** each country's name, colour and flag live in `COUNTRIES` in `world.ts`, and both maps use it.
+- **Map format:** a group can carry a `flag` (ISO code).
+- **Choosing a map:** the lobby has a `map` op, so the host can pick either map, and new rooms start on World.
+
+### Cards
+- **The decks:** both 16-card decks are the user's, in `shared/src/cards.ts`. **Wildcard** (deck id `wildcard`) holds the questionable decisions, and **Treasure** (deck id `dispatch`) holds the windfalls and expenses.
+- **Card fields:** each card has a `title`, the joke `text` and an `action`. The log reads: *Sam drew "Pizza Tribunal": Pay $50.*
+- **New effect:** `advanceTo` moves a player forward to a named city, collecting salary on the way past Start. The map checker rejects a map that's missing a city a card names.
+- **Movement rules:** these match the user's spec and needed no changes. Moving forward collects salary, while moving back and being sent to the Visa Office don't.
+
+### Board look (borrowed ideas, not a copy)
+- **Flags and owner strips:** a country's flag sits on the tile's inner edge, and the owner's colour fills the outer price strip, with houses and hotels drawn on it. Flags are the MIT-licensed `flag-icons` SVGs, because flag emoji don't render on Windows.
+- **Name sizing:** each tile name shrinks until its longest word fits, so long names on the narrower 48-space tiles stay whole.
+- **Board centre:** whose turn it is with the timer, bigger dice, the action button, and the game log fading out underneath.
+- **1280 px and wider:** three columns. The left column holds the title, room, cash, the room link and chat. The board is in the middle, and players, auctions, debts, the property card and trades are on the right.
+- **1024–1279 px:** the link and chat go at the bottom of the right column.
+- **Phones:** keep the tabs.
+- **Wording:** "Lockup" is now "the Visa Office" everywhere in the interface.
+
+### Simulation (2,000 bot games per map, 20 s a turn)
+| | World | World Tour |
+|---|---|---|
+| Finished on their own | 100% | 100% |
+| Classic, 6 players, median | 97 min | 114 min |
+| Classic, 2–6 players, median | about 80–100 min | about 105–115 min |
+| Quick | about 27 min | about 27 min |
+| CPU per action, p99 | 0.49 ms | 0.46 ms (one 10.0 ms outlier in 62,765 actions) |
+
+129 tests pass. The three-player Edge test and a World Tour game in Edge showed no browser errors.

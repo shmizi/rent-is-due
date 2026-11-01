@@ -10,6 +10,7 @@ import { findViolations } from './invariants.ts';
 export interface SimOptions {
   seed: number;
   players: number;
+  mapId?: string;
   settings?: Settings;
   maxActions?: number;
   chaos?: boolean;
@@ -79,7 +80,7 @@ export function simulateGame(options: SimOptions): SimResult {
   settings.room.maxPlayers = Math.max(settings.room.maxPlayers, options.players);
 
   let state = createGame({
-    mapId: 'harborview',
+    mapId: options.mapId ?? 'world',
     settings,
     players: Array.from({ length: options.players }, (_, i) => ({ id: `p${i + 1}`, name: `Bot ${i + 1}`, color: COLORS[i] })),
     seed: options.seed,

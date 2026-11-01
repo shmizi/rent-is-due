@@ -85,6 +85,14 @@ function applyCard(state: GameState, player: PlayerState, card: CardDef, ctx: Re
       resolveLanding(state, player, { diceTotal: ctx.diceTotal }, events);
       return;
 
+    case 'advanceTo': {
+      const target = mapOf(state).spaces.findIndex((s) => s.name === effect.space);
+      if (target < 0) return;
+      moveTo(state, player, target, events);
+      resolveLanding(state, player, { diceTotal: ctx.diceTotal }, events);
+      return;
+    }
+
     case 'goToJail':
       sendToJail(state, player, events);
       return;

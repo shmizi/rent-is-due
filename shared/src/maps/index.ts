@@ -1,8 +1,10 @@
 import type { MapDef } from '../types.ts';
-import { HARBORVIEW } from './harborview.ts';
+import { WORLD } from './world.ts';
+import { WORLD_TOUR } from './worldTour.ts';
 
 export const MAPS: Record<string, MapDef> = {
-  harborview: HARBORVIEW
+  world: WORLD,
+  worldTour: WORLD_TOUR
 };
 
 export function getMap(id: string): MapDef {

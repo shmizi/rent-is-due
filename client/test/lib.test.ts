@@ -1,5 +1,5 @@
 import { describe as group, expect, it } from 'vitest';
-import { HARBORVIEW } from '../../shared/src/maps/harborview.ts';
+import { WORLD } from '../../shared/src/maps/world.ts';
 import { CLASSIC, normalizeSettings } from '../../shared/src/settings.ts';
 import { gameView } from '../../shared/src/view.ts';
 import { simulateGame } from '../../shared/sim/harness.ts';
@@ -24,7 +24,7 @@ group('lobby rule rows', () => {
         }
 
         const before = row.get(settings);
-        const kept = normalizeSettings(settings, HARBORVIEW, 2).settings;
+        const kept = normalizeSettings(settings, WORLD, 2).settings;
         if (!row.blocked?.(kept)) expect(row.get(kept), `${section.id}.${row.id}`).toEqual(before);
       }
     }
@@ -65,6 +65,6 @@ group('board layout', () => {
   it('builds a card for every space', () => {
     const result = simulateGame({ seed: 9, players: 3, maxActions: 300 });
     const game = gameView(result.finalState, null);
-    for (let i = 0; i < 40; i++) expect(spaceInfo(game, i).name).toBe(HARBORVIEW.spaces[i].name);
+    for (let i = 0; i < 40; i++) expect(spaceInfo(game, i).name).toBe(WORLD.spaces[i].name);
   });
 });

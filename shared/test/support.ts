@@ -1,4 +1,6 @@
 import { applyAction } from '../src/engine/apply.ts';
+import { MAPS } from '../src/maps/index.ts';
+import { HARBORVIEW } from './harborview.ts';
 import { createGame } from '../src/engine/create.ts';
 import { rollDie } from '../src/rng.ts';
 import { CLASSIC } from '../src/settings.ts';
@@ -6,12 +8,14 @@ import type { Action, GameEvent, GameState, PlayerState, Settings } from '../src
 
 export const T0 = 1_800_000_000_000;
 
-export function newGame(players = 2, change?: (s: Settings) => void): GameState {
+MAPS.harborview = HARBORVIEW;
+
+export function newGame(players = 2, change?: (s: Settings) => void, mapId = 'harborview'): GameState {
   const settings = structuredClone(CLASSIC);
   change?.(settings);
 
   const state = createGame({
-    mapId: 'harborview',
+    mapId,
     settings,
     players: Array.from({ length: players }, (_, i) => ({ id: `p${i + 1}`, name: `P${i + 1}`, color: '#000000' })),
     seed: 42,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DECKS } from '../src/cards.ts';
 import { rentFor } from '../src/engine/rent.ts';
 import { act, newGame, own, ownEverything, player, setDice, T0, types } from './support.ts';
 
@@ -225,14 +226,15 @@ describe('Lockup', () => {
 
   it('lets the player use a get-out card, which goes back in the deck', () => {
     const state = jailed();
-    state.decks.dispatch = state.decks.dispatch.filter((i) => i !== 8);
+    const pass = DECKS.dispatch.cards.findIndex((c) => c.effect.type === 'jailCard');
+    state.decks.dispatch = state.decks.dispatch.filter((i) => i !== pass);
     player(state, 'p1').jailCards = ['dispatch'];
 
     act(state, { type: 'useJailCard', player: 'p1' });
 
     expect(player(state, 'p1').inJail).toBe(false);
     expect(player(state, 'p1').jailCards).toEqual([]);
-    expect(state.decks.dispatch).toContain(8);
+    expect(state.decks.dispatch).toContain(pass);
   });
 
   it('frees the player on doubles without another roll', () => {
@@ -267,6 +269,6 @@ describe('Lockup', () => {
 
   it('rejects the fine when the player is not in Lockup', () => {
     const state = newGame();
-    expect(() => act(state, { type: 'payJailFine', player: 'p1' }, T0)).toThrow('not in Lockup');
+    expect(() => act(state, { type: 'payJailFine', player: 'p1' }, T0)).toThrow('not at the Visa Office');
   });
 });

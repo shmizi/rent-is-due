@@ -7,6 +7,13 @@ function flag(name: string, fallback: number): number {
   return at >= 0 ? Number(process.argv[at + 1]) : fallback;
 }
 
+function option(name: string, fallback: string): string {
+  const at = process.argv.indexOf(`--${name}`);
+  return at >= 0 ? process.argv[at + 1] : fallback;
+}
+
+const mapId = option('map', 'world');
+
 function variant(name: string, change: (s: Settings) => void): { name: string; settings: Settings } {
   const settings = structuredClone(CLASSIC);
   change(settings);
@@ -79,14 +86,14 @@ for (let i = 0; i < games; i++) {
   const v = VARIANTS[i % VARIANTS.length];
   const players = 2 + (i % 5);
   const chaos = i % 10 < 3;
-  const result = simulateGame({ seed: i + 1, players, settings: v.settings, chaos, checkInvariants: true });
+  const result = simulateGame({ seed: i + 1, players, mapId, settings: v.settings, chaos, checkInvariants: true });
   results.push({ variant: v.name, players, chaos, result });
 }
 
 const elapsed = (performance.now() - started) / 1000;
 const all = results.map((r) => r.result);
 
-console.log(`Simulated ${games} games in ${elapsed.toFixed(1)} s with invariant checks after every action.`);
+console.log(`Map ${mapId}. Simulated ${games} games in ${elapsed.toFixed(1)} s with invariant checks after every action.`);
 console.log(`Total actions ${all.reduce((s, r) => s + r.actions, 0)}, rejected attempts ${all.reduce((s, r) => s + r.rejected, 0)}.`);
 console.log(
   `Bankruptcies ${all.reduce((s, r) => s + r.bankrupt, 0)}, leaves ${all.reduce((s, r) => s + r.left, 0)}, away timeouts ${all.reduce((s, r) => s + r.timedOut, 0)}, ` +
@@ -94,7 +101,7 @@ console.log(
     `auctions ${all.reduce((s, r) => s + r.auctions, 0)}, accepted trades ${all.reduce((s, r) => s + r.trades, 0)}.`
 );
 
-summarize('Classic Harborview, all player counts, no chaos', results.filter((r) => r.variant === 'classic' && !r.chaos).map((r) => r.result));
+summarize(`Classic ${mapId}, all player counts, no chaos`, results.filter((r) => r.variant === 'classic' && !r.chaos).map((r) => r.result));
 for (let players = 2; players <= 6; players++) {
   summarize(`Classic, ${players} players, no chaos`, results.filter((r) => r.variant === 'classic' && !r.chaos && r.players === players).map((r) => r.result));
 }
@@ -110,7 +117,7 @@ for (const v of VARIANTS) {
 let times: number[] = [];
 for (let i = 0; i < timedGames; i++) {
   const v = VARIANTS[i % VARIANTS.length];
-  const result = simulateGame({ seed: 100000 + i, players: 6, settings: v.settings, safe: true, timeActions: true });
+  const result = simulateGame({ seed: 100000 + i, players: 6, mapId, settings: v.settings, safe: true, timeActions: true });
   times = times.concat(result.actionTimesMs);
 }
 

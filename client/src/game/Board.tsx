@@ -4,13 +4,17 @@ import type { MemberView } from '../../../shared/src/protocol.ts';
 import type { GameView } from '../../../shared/src/view.ts';
 import { money } from '../lib/format.ts';
 import { inkFor, mapFor, memberLook, sidePosition } from '../lib/game.ts';
+import { Flag } from '../ui/Flag.tsx';
 import { Icon, SET_ICONS, SPACE_ICONS, TOKEN_PATHS } from '../ui/icons.tsx';
+
+const HOUSE_PATH = 'M4 11.5 12 4l8 7.5V20H4z';
+const HOTEL_PATH = 'M2 20V9.5L12 3l10 6.5V20z';
 
 const CORNER_SUB: Record<string, string> = {
   start: 'Collect salary',
   jail: 'Just visiting',
   free: 'Free stop',
-  goToJail: 'Go to Lockup'
+  goToJail: 'Go to the Visa Office'
 };
 
 function spaceIcon(kind: string, name: string): string | null {
@@ -96,33 +100,40 @@ export function Board({
               <span className="tile-inner items-center justify-center gap-1 p-1">
                 {icon && <Icon path={icon} className="corner-icon text-board-sub" />}
                 <span className="corner-label">{space.name}</span>
-                <span className="corner-sub">{space.kind === 'jail' && tokens.some((p) => p.inJail) ? 'In Lockup' : CORNER_SUB[space.kind]}</span>
+                <span className="corner-sub">{space.kind === 'jail' && tokens.some((p) => p.inJail) ? 'Paperwork pending' : CORNER_SUB[space.kind]}</span>
               </span>
             ) : (
               <span className="tile-inner">
-                <span className="tile-band" style={{ background: group?.color ?? 'transparent' }}>
-                  {group && <Icon path={SET_ICONS[group.icon] ?? SET_ICONS.circle} stroke={inkFor(group.color)} width={3} />}
-                  <span className="flex-1" />
-                  {(prop?.houses ?? 0) === 5 ? (
-                    <span className="h-[45%] w-[34%] rounded-[1px] bg-gold shadow-[0_0_0_1px_rgba(20,16,10,.5)]" />
-                  ) : (
-                    Array.from({ length: prop?.houses ?? 0 }, (_, h) => <span key={h} className="aspect-square h-[45%] rounded-[1px] bg-white shadow-[0_0_0_1px_rgba(20,16,10,.5)]" />)
-                  )}
-                </span>
+                {group?.flag ? (
+                  <span className="tile-band tile-band-flag">
+                    <Flag code={group.flag} />
+                  </span>
+                ) : (
+                  <span className="tile-band" style={{ background: group?.color ?? 'transparent' }}>
+                    {group && <Icon path={SET_ICONS[group.icon] ?? SET_ICONS.circle} stroke={inkFor(group.color)} width={3} />}
+                  </span>
+                )}
                 {!group && icon && (
                   <span className="tile-icon">
                     <Icon path={icon} />
                   </span>
                 )}
-                <span className="tile-name">{space.name}</span>
+                <span className="tile-name" style={{ '--word': Math.max(...space.name.split(/[\s-]+/).map((w) => w.length)) } as CSSProperties}>
+                  {space.name}
+                </span>
                 {owner ? (
-                  <span className="tile-price">
-                    <span className="tile-owner">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d={TOKEN_PATHS[owner.shape] ?? TOKEN_PATHS.circle} fill={owner.color} stroke="#fff" strokeWidth="3" />
+                  <span className="tile-strip" style={{ background: owner.color, color: inkFor(owner.color) }}>
+                    {(prop?.houses ?? 0) === 5 ? (
+                      <svg viewBox="0 0 24 24" aria-hidden="true" className="tile-hotel">
+                        <path d={HOTEL_PATH} />
                       </svg>
-                      <span className="tile-owner-name">{ownerName}</span>
-                    </span>
+                    ) : (
+                      Array.from({ length: prop?.houses ?? 0 }, (_, h) => (
+                        <svg key={h} viewBox="0 0 24 24" aria-hidden="true">
+                          <path d={HOUSE_PATH} />
+                        </svg>
+                      ))
+                    )}
                   </span>
                 ) : (
                   price && (

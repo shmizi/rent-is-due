@@ -71,7 +71,11 @@ export function checkMap(map: MapDef, decks: Record<DeckId, DeckDef>): string[] 
   for (const deck of deckIds) {
     for (const card of decks[deck].cards) {
       if (card.effect.type === 'moveTo' && !needs[card.effect.target]) {
-        errors.push(`Card "${card.text}" needs a ${card.effect.target} space on this map.`);
+        errors.push(`Card "${card.title}" needs a ${card.effect.target} space on this map.`);
+      }
+      if (card.effect.type === 'advanceTo') {
+        const name = card.effect.space;
+        if (!map.spaces.some((s) => s.name === name)) errors.push(`Card "${card.title}" sends players to ${name}, which is not on this map.`);
       }
     }
   }

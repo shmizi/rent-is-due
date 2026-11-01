@@ -9,7 +9,7 @@ import { useGame } from './useGame.ts';
 
 const PIPS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
-export function Dice({ size = 56 }: { size?: number }) {
+export function Dice({ size = 56 }: { size?: number | string }) {
   const { game } = useGame();
   const roll = game.turn.lastRoll ?? [1, 1];
   const key = `${game.turn.number}-${game.turn.rolls}`;
@@ -23,7 +23,7 @@ export function Dice({ size = 56 }: { size?: number }) {
           animate={{ rotate: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 220, damping: 16 }}
           className="grid grid-cols-3 grid-rows-3 gap-[3px] rounded-[22%] bg-white shadow-[0_4px_0_#C9BFA9,0_6px_14px_rgba(0,0,0,.25)]"
-          style={{ width: size, height: size, padding: size * 0.15, opacity: game.turn.lastRoll ? 1 : 0.45 }}
+          style={{ width: size, height: size, padding: typeof size === 'number' ? size * 0.15 : `calc(${size} * 0.15)`, opacity: game.turn.lastRoll ? 1 : 0.45 }}
           aria-label={`Die showing ${face}`}
           role="img"
         >
@@ -77,7 +77,7 @@ export function useTurnPrompt(): { title: string; sub: string; choices: Choice[]
     const choices: Choice[] = [{ label: 'Roll for doubles', action: { type: 'roll' }, tone: 'primary' }];
     if (me.cash >= s.jailFine) choices.push({ label: `Pay ${money(s.jailFine)}`, action: { type: 'payJailFine' }, tone: 'secondary' });
     if (me.jailCards.length > 0) choices.push({ label: 'Use card', action: { type: 'useJailCard' }, tone: 'secondary' });
-    return { title: 'You’re in Lockup', sub: `Attempt ${me.jailTurns + 1} of ${s.maxJailTurns}`, choices, timer };
+    return { title: 'You’re stuck at the Visa Office', sub: `Attempt ${me.jailTurns + 1} of ${s.maxJailTurns}`, choices, timer };
   }
 
   if (turn.phase === 'preRoll') return { title: 'Your turn', sub: 'Build or trade first if you like', choices: [{ label: 'Roll dice', action: { type: 'roll' }, tone: 'primary' }], timer };

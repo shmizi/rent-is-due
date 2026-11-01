@@ -19,7 +19,7 @@ const DESCRIPTIONS: Record<string, string> = {
   start: 'Collect your salary every time you pass.',
   jail: 'Just visiting, or serving time. Pay the fine, use a card or roll doubles to get out.',
   free: 'A free stop. With the jackpot rule on, landing here wins the jackpot.',
-  goToJail: 'Go straight to Lockup. You don’t pass Start or collect your salary.'
+  goToJail: 'Go straight to the Visa Office. You don’t pass Start or collect your salary.'
 };
 
 export function spaceInfo(game: GameView, index: number): SpaceInfo {
@@ -77,10 +77,10 @@ export function spaceInfo(game: GameView, index: number): SpaceInfo {
     const owned = prop?.owner ? map.spaces.filter((x, i) => x.kind === 'transit' && game.props[i]?.owner === prop.owner).length : 0;
     return {
       ...base,
-      kindLabel: 'Ferry',
+      kindLabel: 'Airport',
       icon: 'transit',
       price: space.price,
-      rows: map.transitRents.map((rent, i) => ({ label: i === 0 ? '1 ferry owned' : i === 3 ? 'All 4 ferries' : `${i + 1} ferries`, value: money(rent), active: owned === i + 1 })),
+      rows: map.transitRents.map((rent, i) => ({ label: i === 0 ? '1 airport owned' : i === 3 ? 'All 4 airports' : `${i + 1} airports`, value: money(rent), active: owned === i + 1 })),
       footer: `Mortgage value ${money(mortgageValue(game, index))}.`,
       description: null
     };

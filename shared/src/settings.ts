@@ -95,7 +95,7 @@ export function normalizeSettings(input: Settings, map: MapDef, playerCount?: nu
 
   if (!s.rollAgainOnDoubles && s.threeDoublesJail) {
     s.threeDoublesJail = false;
-    notes.push('Three doubles to Lockup is off because roll again on doubles is off.');
+    notes.push('Three doubles to the Visa Office is off because roll again on doubles is off.');
   }
 
   if (!s.auctions && s.bankruptProperties === 'auction') {

@@ -72,7 +72,7 @@ export function roll(state: GameState, player: PlayerState, events: GameEvent[])
 export function payJailFine(state: GameState, player: PlayerState, events: GameEvent[]): void {
   requireTurn(state, player, ['preRoll']);
   requireCalm(state);
-  if (!player.inJail) fail('notInJail', 'You are not in Lockup.');
+  if (!player.inJail) fail('notInJail', 'You are not at the Visa Office.');
   if (player.cash < state.settings.jailFine) fail('cannotAfford', 'You cannot afford the fine.');
 
   charge(state, player, feeCreditor(state, 'jailFines'), state.settings.jailFine, 'jailFine', events);
@@ -84,7 +84,7 @@ export function payJailFine(state: GameState, player: PlayerState, events: GameE
 export function useJailCard(state: GameState, player: PlayerState, events: GameEvent[]): void {
   requireTurn(state, player, ['preRoll']);
   requireCalm(state);
-  if (!player.inJail) fail('notInJail', 'You are not in Lockup.');
+  if (!player.inJail) fail('notInJail', 'You are not at the Visa Office.');
 
   const deck = player.jailCards.pop();
   if (!deck) fail('noJailCard', 'You do not have a get-out card.');

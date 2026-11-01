@@ -7,6 +7,7 @@ export interface GroupDef {
   color: string;
   icon: string;
   houseCost: number;
+  flag?: string;
 }
 
 export type TaxDef = { type: 'income' } | { type: 'flat'; amount: number };
@@ -64,6 +65,7 @@ export type CardEffect =
   | { type: 'money'; amount: number }
   | { type: 'moveTo'; target: CardTarget; transitMultiplier?: number; utilityDice?: number }
   | { type: 'moveBy'; steps: number }
+  | { type: 'advanceTo'; space: string }
   | { type: 'goToJail' }
   | { type: 'jailCard' }
   | { type: 'payEach'; amount: number }
@@ -71,7 +73,9 @@ export type CardEffect =
   | { type: 'repairs'; perHouse: number; perHotel: number };
 
 export interface CardDef {
+  title: string;
   text: string;
+  action: string;
   effect: CardEffect;
 }
 

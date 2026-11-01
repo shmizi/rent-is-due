@@ -29,15 +29,15 @@ const REASONS: Record<string, string> = {
   tax: 'in tax',
   card: 'for a card',
   repairs: 'for repairs',
-  jailFine: 'to leave Lockup',
+  jailFine: 'to leave the Visa Office',
   auction: 'for the auction',
   mortgageInterest: 'in mortgage interest'
 };
 
-export function cardText(detail: string | undefined): string {
-  if (!detail) return '';
+export function cardOf(detail: string | undefined) {
+  if (!detail) return null;
   const [deck, index] = detail.split(':');
-  return DECKS[deck as DeckId]?.cards[Number(index)]?.text ?? '';
+  return DECKS[deck as DeckId]?.cards[Number(index)] ?? null;
 }
 
 export function describe(event: GameEvent, game: GameView): string | null {
@@ -58,22 +58,24 @@ export function describe(event: GameEvent, game: GameView): string | null {
     case 'debtPaid':
       return `${who} paid off ${amount} owed to ${target}`;
     case 'jailed':
-      return `${who} went to Lockup`;
+      return `${who} went to the Visa Office`;
     case 'leftJail':
       return {
-        doubles: `${who} rolled doubles and got out of Lockup`,
-        paid: `${who} paid the fine and left Lockup`,
+        doubles: `${who} rolled doubles and got out of the Visa Office`,
+        paid: `${who} paid the fine and left the Visa Office`,
         card: `${who} used a get-out card`,
-        forced: `${who} paid the fine after the last turn in Lockup`
-      }[event.detail ?? ''] ?? `${who} left Lockup`;
-    case 'card':
-      return `${who} drew a card: ${cardText(event.detail)}`;
+        forced: `${who} paid the fine after the last turn at the Visa Office`
+      }[event.detail ?? ''] ?? `${who} left the Visa Office`;
+    case 'card': {
+      const card = cardOf(event.detail);
+      return card ? `${who} drew “${card.title}”: ${card.action}` : `${who} drew a card`;
+    }
     case 'cannotBuyYet':
       return `${who} has to finish a lap before buying ${space}`;
     case 'noRentMortgaged':
       return `No rent on ${space}, it is mortgaged`;
     case 'noRentJail':
-      return `No rent on ${space} while its owner is in Lockup`;
+      return `No rent on ${space} while its owner is at the Visa Office`;
     case 'jackpot':
       return `${who} won the ${amount} jackpot`;
     case 'bought':

@@ -6,7 +6,7 @@ Multiplayer property-trading game for the browser. Adjustable house rules, sever
 
 No install and no accounts. One person makes a room and sends the link, and everyone joins from their own phone or laptop.
 
-![A game in progress on Harborview: the board, game log, players and a property card](docs/game.png)
+![A game in progress on the World map: flags on every country, owners' colours on the price strips, the log in the middle of the board](docs/game.png)
 
 <table>
   <tr>
@@ -33,7 +33,7 @@ If you drop out, just reopen the link and you get your seat back.
 ## Features
 
 - **Real-time multiplayer:** 2–6 players, each on their own device, plus up to 20 spectators.
-- **Trades:** offers of properties, cash and get-out-of-Lockup cards, with counter-offers. An offer stays open until someone accepts, declines or cancels it.
+- **Trades:** offers of properties, cash and Visa Office passes, with counter-offers. An offer stays open until someone accepts, declines or cancels it.
 - **Auctions:** when a property goes unbought, everyone bids with a live countdown, and late bids add time.
 - **Timers:** a step timer keeps turns moving.
 - **Players who drop out:** someone who disconnects becomes *away*. If they aren't back before the timeout, they leave the game and their properties go back to the bank. The other players can vote to give them more time.
@@ -49,11 +49,11 @@ If you drop out, just reopen the link and you get your seat back.
 | Money | Starting cash, salary, income tax (a flat amount or a % of cash), double salary for landing on Start |
 | Jackpot | Free-parking-style jackpot, and which taxes and fines go into it |
 | Buying | Auctions on or off, a lap before buying, properties dealt at the start |
-| Rent | Double rent on a full set, rent collected while in Lockup |
+| Rent | Double rent on a full set, rent collected while at the Visa Office |
 | Building | Full set needed, even building, sell-back value, build only on your own turn |
 | Mortgages | Mortgage value, interest to pay it off, interest on traded mortgages |
-| Dice and Lockup | Roll again on doubles, three doubles to Lockup, the Lockup fine, the most turns in Lockup |
-| Trading | Trading on or off, trade only on your turn, Lockup cards tradable |
+| Dice and the Visa Office | Roll again on doubles, three doubles to the Visa Office, the Visa Office fine, the most turns there |
+| Trading | Trading on or off, trade only on your turn, Visa Office passes tradable |
 | Bankruptcy and winning | Bankrupt players' properties go back to the bank or to auction. Win by being the last one standing, by a round limit or by reaching a net-worth target |
 | Room | Seats, step timer, auction timer, away timeout, spectators and spectator chat |
 
@@ -63,12 +63,16 @@ If you drop out, just reopen the link and you get your seat back.
 
 ## Maps
 
-| Map | Status |
-|---|---|
-| **Harborview**: a 40-space seaside town of quays, ferries and a lighthouse | ✅ Playable |
-| **Pocket Town**: a 32-space board for short games | Planned |
-| **Metro Sprawl**: a 48-space board for long games | Planned |
-| **World**: real countries and cities, with airports as the transit stops | Planned |
+Every country is a set, marked by its flag. Airports are the transit stops, and anyone sent away ends up at the **Visa Office**.
+
+| Map | Size | Countries, cheapest to priciest |
+|---|---|---|
+| **World** | 40 spaces, 22 cities | Brazil, India, China, Italy, Israel, Japan, United Kingdom, United States |
+| **World Tour** | 48 spaces, 30 cities | Brazil, India, Russia, China, Italy, Israel, France, Japan, United Kingdom, United States |
+
+Airports: Dubai, Singapore, Istanbul and Sydney. The two card decks, **Wildcard** (questionable decisions and international incidents) and **Treasure** (suspicious windfalls and unavoidable expenses), are written for these maps.
+
+With bots taking 20 seconds a turn, a Classic game runs about 80–100 minutes on World and 105–115 minutes on World Tour. Quick takes about 30–45 minutes on either.
 
 ---
 
@@ -119,12 +123,12 @@ PLAN.md   the full design, decisions and test results
 
 ## Roadmap
 
-- [x] Rules engine, Harborview and the simulator
+- [x] Rules engine and the bot simulator
 - [x] Room server on Cloudflare
 - [x] Browser client
 - [x] Deployed
 - [ ] First real game night
-- [ ] Pocket Town, Metro Sprawl and the World map
+- [x] World and World Tour maps
 - [ ] Extras picked after playtesting
 
 ## License

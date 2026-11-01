@@ -41,7 +41,7 @@ export function PlayersPanel({ onLocate }: { onLocate?: (id: string) => void }) 
         const out = p.status !== 'active';
         let status = current ? (p.id === you.id ? 'Your turn' : 'Playing') : 'Waiting';
         let statusColor = current ? 'text-mint' : 'text-muted';
-        if (p.inJail) status = `In Lockup, attempt ${p.jailTurns + 1}`;
+        if (p.inJail) status = `At the Visa Office, attempt ${p.jailTurns + 1}`;
         if (p.away) {
           status = `Away, ${clock(p.away.deadline - now)} left to rejoin`;
           statusColor = 'text-amber';

@@ -44,7 +44,7 @@ export const SECTIONS: RuleSection[] = [
         id: 'incomeTax',
         kind: 'select',
         label: 'Income tax',
-        desc: 'Charged on the Harbor Tax space',
+        desc: 'Charged on the Departure Tax space',
         options: [
           { value: 'p5', label: '5% of cash' },
           { value: 'p10', label: '10% of cash' },
@@ -64,9 +64,9 @@ export const SECTIONS: RuleSection[] = [
     title: 'Jackpot',
     rows: [
       { id: 'jackpot', kind: 'toggle', label: 'Jackpot on the Plaza', desc: 'Money paid to the bank piles up for whoever lands on the Plaza', house: true, get: (s) => s.jackpot.enabled, set: (s, v) => (s.jackpot.enabled = v) },
-      { id: 'jpTaxes', kind: 'toggle', label: 'Taxes go in', desc: 'Harbor Tax and Mooring Fee', hidden: (s) => !s.jackpot.enabled, get: (s) => s.jackpot.taxes, set: (s, v) => (s.jackpot.taxes = v) },
+      { id: 'jpTaxes', kind: 'toggle', label: 'Taxes go in', desc: 'Departure Tax and Customs', hidden: (s) => !s.jackpot.enabled, get: (s) => s.jackpot.taxes, set: (s, v) => (s.jackpot.taxes = v) },
       { id: 'jpCards', kind: 'toggle', label: 'Card fines go in', desc: 'Money paid because of a card', hidden: (s) => !s.jackpot.enabled, get: (s) => s.jackpot.cardFines, set: (s, v) => (s.jackpot.cardFines = v) },
-      { id: 'jpJail', kind: 'toggle', label: 'Lockup fines go in', desc: 'Fines paid to leave Lockup', hidden: (s) => !s.jackpot.enabled, get: (s) => s.jackpot.jailFines, set: (s, v) => (s.jackpot.jailFines = v) },
+      { id: 'jpJail', kind: 'toggle', label: 'Visa Office fines go in', desc: 'Fines paid to leave the Visa Office', hidden: (s) => !s.jackpot.enabled, get: (s) => s.jackpot.jailFines, set: (s, v) => (s.jackpot.jailFines = v) },
       { id: 'jpSeed', kind: 'number', label: 'Seed money', desc: 'Put in by the bank each time the jackpot is won', min: 0, max: 1000, step: 50, prefix: '$', hidden: (s) => !s.jackpot.enabled, get: (s) => s.jackpot.seed, set: (s, v) => (s.jackpot.seed = v) }
     ]
   },
@@ -84,7 +84,7 @@ export const SECTIONS: RuleSection[] = [
     title: 'Rent',
     rows: [
       { id: 'doubleRent', kind: 'toggle', label: 'Double rent on a full set', desc: 'While the set has no buildings', get: (s) => s.doubleRentFullSet, set: (s, v) => (s.doubleRentFullSet = v) },
-      { id: 'jailRent', kind: 'toggle', label: 'Rent while in Lockup', desc: 'Players in Lockup still collect rent', get: (s) => s.rentInJail, set: (s, v) => (s.rentInJail = v) }
+      { id: 'jailRent', kind: 'toggle', label: 'Rent while at the Visa Office', desc: 'Players at the Visa Office still collect rent', get: (s) => s.rentInJail, set: (s, v) => (s.rentInJail = v) }
     ]
   },
   {
@@ -143,20 +143,20 @@ export const SECTIONS: RuleSection[] = [
   },
   {
     id: 'dice',
-    title: 'Dice and Lockup',
+    title: 'Dice and the Visa Office',
     rows: [
       { id: 'doubles', kind: 'toggle', label: 'Roll again on doubles', desc: 'Doubles give you another roll', get: (s) => s.rollAgainOnDoubles, set: (s, v) => (s.rollAgainOnDoubles = v) },
       {
         id: 'threeDoubles',
         kind: 'toggle',
-        label: 'Three doubles to Lockup',
-        desc: 'A third double in a row sends you to Lockup',
+        label: 'Three doubles to the Visa Office',
+        desc: 'A third double in a row sends you to the Visa Office',
         blocked: (s) => (s.rollAgainOnDoubles ? null : 'Needs roll again on doubles'),
         get: (s) => s.threeDoublesJail,
         set: (s, v) => (s.threeDoublesJail = v)
       },
-      { id: 'fine', kind: 'number', label: 'Lockup fine', desc: 'Pay this to leave Lockup', min: 0, max: 200, step: 10, prefix: '$', get: (s) => s.jailFine, set: (s, v) => (s.jailFine = v) },
-      { id: 'maxJail', kind: 'number', label: 'Longest stay', desc: 'Turns in Lockup before you must pay', min: 1, max: 5, step: 1, suffix: ' turns', get: (s) => s.maxJailTurns, set: (s, v) => (s.maxJailTurns = v) }
+      { id: 'fine', kind: 'number', label: 'Visa Office fine', desc: 'Pay this to leave the Visa Office', min: 0, max: 200, step: 10, prefix: '$', get: (s) => s.jailFine, set: (s, v) => (s.jailFine = v) },
+      { id: 'maxJail', kind: 'number', label: 'Longest stay', desc: 'Turns at the Visa Office before you must pay', min: 1, max: 5, step: 1, suffix: ' turns', get: (s) => s.maxJailTurns, set: (s, v) => (s.maxJailTurns = v) }
     ]
   },
   {
@@ -177,8 +177,8 @@ export const SECTIONS: RuleSection[] = [
       {
         id: 'cardsTradable',
         kind: 'toggle',
-        label: 'Lockup cards tradable',
-        desc: 'Get-out-of-Lockup cards can be traded',
+        label: 'Visa Office passes tradable',
+        desc: 'Visa Office passes can be traded',
         blocked: (s) => (s.trading ? null : 'Needs trading on'),
         get: (s) => s.jailCardsTradable,
         set: (s, v) => (s.jailCardsTradable = v)

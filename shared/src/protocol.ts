@@ -49,6 +49,7 @@ export type ClientAction = WithoutPlayer<PlayerAction>;
 export type LobbyOp =
   | { op: 'settings'; settings: Settings }
   | { op: 'preset'; preset: 'classic' | 'quick' }
+  | { op: 'map'; mapId: string }
   | { op: 'appearance'; color?: string; shape?: string; name?: string }
   | { op: 'start' }
   | { op: 'rematch' }

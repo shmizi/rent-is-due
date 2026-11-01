@@ -1,7 +1,7 @@
 import { applyActionSafe } from '../../../shared/src/engine/apply.ts';
 import { createGame } from '../../../shared/src/engine/create.ts';
 import { nextDeadline } from '../../../shared/src/engine/timers.ts';
-import { getMap } from '../../../shared/src/maps/index.ts';
+import { getMap, MAPS } from '../../../shared/src/maps/index.ts';
 import {
   PLAYER_COLORS,
   TOKEN_SHAPES,
@@ -160,7 +160,7 @@ export class RoomCore {
 
     const now = this.host.now();
     this.createTables();
-    const map = getMap('harborview');
+    const map = getMap('world');
     const { settings, notes } = normalizeSettings(CLASSIC, map);
 
     this.meta = {
@@ -600,6 +600,8 @@ export class RoomCore {
       case 'preset':
         if (!(op.preset in PRESETS)) return this.reject(conn, id, 'badPreset', 'Unknown preset.');
         return this.changeSettings(conn, id, PRESETS[op.preset], op.preset);
+      case 'map':
+        return this.changeMap(conn, id, op.mapId);
       case 'start':
         return this.start(conn, id);
       case 'rematch':
@@ -686,6 +688,15 @@ export class RoomCore {
     meta.lastActivity = this.host.now();
     this.saveMeta();
     this.broadcastRoom();
+  }
+
+  private changeMap(conn: Conn, id: string, mapId: unknown): void {
+    const meta = this.meta!;
+    if (meta.phase !== 'lobby') return this.reject(conn, id, 'notLobby', 'The map is locked once the game starts.');
+    if (typeof mapId !== 'string' || !Object.hasOwn(MAPS, mapId)) return this.reject(conn, id, 'badMap', 'Unknown map.');
+
+    meta.mapId = mapId;
+    this.changeSettings(conn, id, meta.settings, meta.preset);
   }
 
   private start(conn: Conn, id: string): void {
