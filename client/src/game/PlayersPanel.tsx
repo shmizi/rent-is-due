@@ -54,7 +54,7 @@ export function PlayersPanel({ onLocate }: { onLocate?: (id: string) => void }) 
 
         return (
           <li key={p.id} className={`player-row relative flex flex-wrap items-center gap-3 rounded-xl px-3 py-3 ${current ? 'player-row-current' : ''} ${out ? 'opacity-55' : ''}`}>
-            <Token color={look.color} shape={look.shape} label={p.name.charAt(0).toUpperCase()} size={38} />
+            <Token color={look.color} label={p.name.charAt(0).toUpperCase()} size={38} />
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-semibold">
                 {p.name}

@@ -3,7 +3,7 @@ import { DECKS } from '../src/cards.ts';
 import { checkMap } from '../src/maps/checkMap.ts';
 import { WORLD } from '../src/maps/world.ts';
 import { WORLD_TOUR } from '../src/maps/worldTour.ts';
-import { HARBORVIEW } from './harborview.ts';
+import { HARBORVIEW } from '../src/maps/harborview.ts';
 import { groupStreets } from '../src/engine/helpers.ts';
 import { CLASSIC, normalizeSettings, QUICK } from '../src/settings.ts';
 import type { MapDef } from '../src/types.ts';

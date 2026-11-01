@@ -113,9 +113,14 @@ export class RoomCore {
 
     const meta = this.host.sql.exec("SELECT value FROM meta WHERE key = 'room'").rows[0];
     this.meta = meta ? (JSON.parse(meta.value as string) as RoomMeta) : null;
+    this.leaveRetiredMap();
 
     const game = this.host.sql.exec('SELECT json FROM game WHERE id = 1').rows[0];
     this.game = game ? (JSON.parse(game.json as string) as GameState) : null;
+  }
+
+  private leaveRetiredMap(): void {
+    if (this.meta && this.meta.phase === 'lobby' && !Object.hasOwn(MAPS, this.meta.mapId)) this.meta.mapId = 'world';
   }
 
   private createTables(): void {
@@ -738,6 +743,7 @@ export class RoomCore {
     this.game = null;
     this.exec('DELETE FROM game');
     meta.phase = 'lobby';
+    this.leaveRetiredMap();
     meta.graces = {};
     meta.lastActivity = this.host.now();
     this.saveMeta();

@@ -1,6 +1,6 @@
 import { applyAction } from '../src/engine/apply.ts';
 import { MAPS } from '../src/maps/index.ts';
-import { HARBORVIEW } from './harborview.ts';
+import { HARBORVIEW } from '../src/maps/harborview.ts';
 import { createGame } from '../src/engine/create.ts';
 import { rollDie } from '../src/rng.ts';
 import { CLASSIC } from '../src/settings.ts';

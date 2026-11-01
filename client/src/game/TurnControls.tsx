@@ -22,7 +22,7 @@ export function Dice({ size = 56 }: { size?: number | string }) {
           initial={game.turn.lastRoll ? { rotate: d ? -200 : 200, scale: 0.6 } : false}
           animate={{ rotate: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 220, damping: 16 }}
-          className="grid grid-cols-3 grid-rows-3 gap-[3px] rounded-[22%] bg-white shadow-[0_4px_0_#C9BFA9,0_6px_14px_rgba(0,0,0,.25)]"
+          className="grid grid-cols-3 grid-rows-3 gap-[3px] rounded-[22%] bg-white shadow-[0_4px_0_#B4BAD8,0_6px_14px_rgba(0,0,0,.35)]"
           style={{ width: size, height: size, padding: typeof size === 'number' ? size * 0.15 : `calc(${size} * 0.15)`, opacity: game.turn.lastRoll ? 1 : 0.45 }}
           aria-label={`Die showing ${face}`}
           role="img"

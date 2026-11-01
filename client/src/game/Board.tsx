@@ -167,7 +167,7 @@ export function Board({
                       className="board-piece" data-current={current} data-located={located} data-player={p.id}
                       style={{ '--piece-color': look.color, zIndex: located ? 5 : current ? 4 : 1 } as CSSProperties}>
                       {(located || (current && !players.some((player) => player.id === focusedPlayer))) && <span className="piece-flag">{p.id === you ? 'YOU' : current ? 'TURN' : p.name}</span>}
-                      <svg viewBox="0 0 24 24"><path d={TOKEN_PATHS[look.shape] ?? TOKEN_PATHS.circle} fill={look.color} stroke="#fff" strokeWidth="2.5" /></svg>
+                      <svg viewBox="0 0 24 24"><path d={TOKEN_PATHS.circle} fill={look.color} stroke="#fff" strokeWidth="2.5" /></svg>
                       <span className="piece-initial" style={{ color: inkFor(look.color) }}>{p.name.charAt(0).toUpperCase()}</span>
                     </motion.span>
                   );

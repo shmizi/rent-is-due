@@ -6,7 +6,7 @@ import { Button, Confirm, Panel, Token, useDialog } from '../ui/kit.tsx';
 import { useGame } from './useGame.ts';
 import type { TradeOffer } from '../../../shared/src/types.ts';
 
-export function AuctionPanel() {
+export function AuctionPanel({ onHide }: { onHide?: () => void } = {}) {
   const { game, me, connection } = useGame();
   const now = useNow(250);
   const [custom, setCustom] = useState('');
@@ -20,7 +20,20 @@ export function AuctionPanel() {
   const bid = (amount: number) => connection.act({ type: 'bid', auction: auction.id, amount });
 
   return (
-    <Panel title="Auction" right={<span className="money text-sm font-semibold text-amber">{clock(auction.deadline - now)}</span>}>
+    <Panel
+      title="Auction"
+      className={onHide ? 'border-0 bg-transparent p-1' : ''}
+      right={
+        <span className="flex items-center gap-2">
+          <span className="money text-sm font-semibold text-amber">{clock(auction.deadline - now)}</span>
+          {onHide && (
+            <Button size="sm" tone="ghost" onClick={onHide}>
+              Hide
+            </Button>
+          )}
+        </span>
+      }
+    >
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-display text-xl font-semibold">{spaceName(game, auction.space)}</span>
         <span className="text-xs text-muted">listed at {money(price)}</span>
@@ -216,7 +229,7 @@ export function GameOver() {
             const look = memberLook(room.members, p.id);
             return (
               <li key={p.id} className="flex items-center gap-3 rounded-xl bg-raised px-3 py-2">
-                <Token color={look.color} shape={look.shape} label={p.name.charAt(0)} size={28} />
+                <Token color={look.color} label={p.name.charAt(0)} size={28} />
                 <span className="flex-1 font-semibold">{p.name}</span>
                 <span className="flex flex-col items-end">
                   {p.status === 'active' && <span className="money text-sm font-semibold text-gold">worth {money(worth(game, p.id))}</span>}

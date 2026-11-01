@@ -97,7 +97,7 @@ export function TradeComposer({ draft, onClose }: { draft: TradeDraft | null; on
                 }}
                 className={`flex h-11 items-center gap-2 rounded-full border-2 px-3 ${to === p.id ? 'border-mint bg-raised' : 'border-line'}`}
               >
-                <Token color={look.color} shape={look.shape} size={22} />
+                <Token color={look.color} size={22} />
                 <span className="text-sm font-semibold">{p.name}</span>
               </button>
             );

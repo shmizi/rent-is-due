@@ -1,5 +1,5 @@
 import { DECKS } from '../cards.ts';
-import { randomInt } from '../rng.ts';
+import { randomInt, rollDie } from '../rng.ts';
 import type { CardDef, CardTarget, DeckId, GameEvent, GameState, PlayerState } from '../types.ts';
 import { activePlayers, emit, findPlayer, mapOf } from './helpers.ts';
 import { charge, feeCreditor, payFromBank } from './money.ts';
@@ -75,10 +75,19 @@ function applyCard(state: GameState, player: PlayerState, card: CardDef, ctx: Re
       else charge(state, player, feeCreditor(state, 'cardFines'), -effect.amount, 'card', events);
       return;
 
-    case 'moveTo':
+    case 'moveTo': {
       moveTo(state, player, cardTarget(state, player, effect.target), events);
-      resolveLanding(state, player, { diceTotal: ctx.diceTotal, transitMultiplier: effect.transitMultiplier, utilityDice: effect.utilityDice }, events);
+      const prop = state.props[player.position];
+      let diceTotal = ctx.diceTotal;
+      if (effect.utilityDice && prop?.owner && prop.owner !== player.id && !prop.mortgaged) {
+        const d1 = rollDie(state);
+        const d2 = rollDie(state);
+        diceTotal = d1 + d2;
+        emit(state, events, { type: 'rolled', player: player.id, detail: `${d1}+${d2}` });
+      }
+      resolveLanding(state, player, { diceTotal, transitMultiplier: effect.transitMultiplier, utilityDice: effect.utilityDice }, events);
       return;
+    }
 
     case 'moveBy':
       moveBy(state, player, effect.steps, events);

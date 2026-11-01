@@ -70,11 +70,11 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
   );
 }
 
-export function Token({ color, shape, label, size = 28 }: { color: string; shape: string; label?: string; size?: number }) {
+export function Token({ color, label, size = 28 }: { color: string; label?: string; size?: number }) {
   return (
     <span className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="absolute inset-0">
-        <path d={TOKEN_PATHS[shape] ?? TOKEN_PATHS.circle} fill={color} stroke="#fff" strokeWidth="2" />
+        <path d={TOKEN_PATHS.circle} fill={color} stroke="#fff" strokeWidth="2" />
       </svg>
       {label && (
         <span className="relative text-[11px] font-bold" style={{ color: inkFor(color) }}>
@@ -170,27 +170,43 @@ export function Confirm({ title, body, action, tone = 'danger', onConfirm, onClo
   );
 }
 
-export function CopyLink({ url }: { url: string }) {
-  return (
-    <div className="flex gap-2">
-      <input readOnly value={url} aria-label="Room link" onFocus={(e) => e.currentTarget.select()} className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-ink px-3 text-[13px] text-text" />
-      <CopyButton text={url} />
-    </div>
-  );
+function copyWithSelection(input: HTMLInputElement | null): boolean {
+  if (!input) return false;
+  input.focus();
+  input.select();
+  try {
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  }
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+export function CopyLink({ url }: { url: string }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const copy = async () => {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch {
+      ok = copyWithSelection(input.current);
+    }
+    setStatus(ok ? 'copied' : 'failed');
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setStatus('idle'), ok ? 1500 : 4000);
+  };
 
   return (
-    <Button
-      onClick={() => {
-        void navigator.clipboard?.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-    >
-      {copied ? 'Copied' : 'Copy'}
-    </Button>
+    <div>
+      <div className="flex gap-2">
+        <input ref={input} readOnly value={url} aria-label="Room link" onFocus={(e) => e.currentTarget.select()} className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-ink px-3 text-[13px] text-text" />
+        <Button onClick={() => void copy()}>{status === 'copied' ? 'Copied' : 'Copy'}</Button>
+      </div>
+      <p role="status" className="mt-1.5 text-xs text-danger empty:hidden">{status === 'failed' ? 'Could not copy. The link is selected, so copy it yourself.' : ''}</p>
+    </div>
   );
 }

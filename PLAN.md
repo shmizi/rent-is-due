@@ -638,3 +638,18 @@ Harborview is gone from the game. It's kept only as a test fixture in `shared/te
 | CPU per action, p99 | 0.49 ms | 0.46 ms (one 10.0 ms outlier in 62,765 actions) |
 
 129 tests pass. The three-player Edge test and a World Tour game in Edge showed no browser errors.
+
+## 19. Third review fixes and the glass board (2026-11-01)
+
+### Review fixes
+- **Old Harborview games:** Harborview is back in `shared/src/maps/harborview.ts` as a retired map. `getMap` still finds it, so saved games resume, but the lobby can't pick it. A lobby or rematch on a retired map moves to World. A card that names a city Harborview doesn't have does nothing there.
+- **"Connected, No Internet":** when the utility is owned by someone else, the engine rolls two fresh dice and charges 10× that roll, and the log shows the roll.
+- **Card jokes:** a drawn card pops up for everyone with the deck, the title, the joke and the instruction, plus the fresh roll if there was one. It closes on a tap or after 10 seconds.
+- **Copy link:** the button only says "Copied" when copying worked. It falls back to selecting the link and copying it the old way, and if that fails too, it says so and leaves the link selected.
+
+### Look
+- **Glass board:** the cream board is gone. Tiles and the centre are frosted glass panels over a dark gradient with soft mint, violet, blue and amber glows, and all board text is light.
+- **Auction pop-up:** an auction opens a pop-up in the middle of the screen, or at the bottom on phones, for every player and spectator. **Hide** docks it back in the side panel or the phone's bottom bar, and the space card switches to the property being auctioned.
+- **Pieces:** every piece is a circle in the player's colour with their initial. The lobby's shape picker is gone. Colours are still unique per room.
+
+131 tests pass. The three-player Edge test showed no browser errors, and a two-player Edge game showed the card and auction pop-ups on desktop and phone.

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { MAPS } from '../../../shared/src/maps/index.ts';
-import { PLAYER_COLORS, TOKEN_SHAPES, type MemberView } from '../../../shared/src/protocol.ts';
+import { PLAYER_COLORS, type MemberView } from '../../../shared/src/protocol.ts';
 import type { MapDef, Settings } from '../../../shared/src/types.ts';
 import { useConnection, useRoom } from '../net/useRoom.ts';
 import { Chat } from '../ui/Chat.tsx';
 import { Flag } from '../ui/Flag.tsx';
-import { Icon, TOKEN_PATHS, UI_ICONS } from '../ui/icons.tsx';
+import { Icon, UI_ICONS } from '../ui/icons.tsx';
 import { Button, CopyLink, Panel, Toggle, Token } from '../ui/kit.tsx';
 import { houseRulesOn, isHouseRule, SECTIONS, type RuleRow } from './rules.ts';
 
@@ -131,7 +131,7 @@ function MemberRow({ member, me, isHost }: { member: MemberView; me: boolean; is
 
   return (
     <li className={`flex items-center gap-3 rounded-xl px-2 py-2 ${me ? 'bg-raised' : ''}`}>
-      <Token color={member.color} shape={member.shape} label={member.name.charAt(0).toUpperCase()} size={32} />
+      <Token color={member.color} label={member.name.charAt(0).toUpperCase()} size={32} />
       <span className="min-w-0 flex-1 truncate font-semibold">
         {member.name}
         {me && <span className="font-normal text-muted"> (you)</span>}
@@ -176,22 +176,6 @@ function YourLook({ members, meId }: { members: MemberView[]; meId: string }) {
             </button>
           );
         })}
-      </div>
-      <div className="mt-3 flex gap-2">
-        {TOKEN_SHAPES.map((shape) => (
-          <button
-            key={shape}
-            type="button"
-            aria-label={`${shape} token`}
-            aria-pressed={me.shape === shape}
-            onClick={() => connection.lobby({ op: 'appearance', shape })}
-            className={`flex h-12 w-12 items-center justify-center rounded-xl border-2 bg-ink ${me.shape === shape ? 'border-mint' : 'border-line'}`}
-          >
-            <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
-              <path d={TOKEN_PATHS[shape]} fill={me.color} stroke="#fff" strokeWidth="1.5" />
-            </svg>
-          </button>
-        ))}
       </div>
       <form
         className="mt-3 flex gap-2"

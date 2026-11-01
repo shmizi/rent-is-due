@@ -34,11 +34,11 @@ If you drop out, just reopen the link and you get your seat back.
 
 - **Real-time multiplayer:** 2–6 players, each on their own device, plus up to 20 spectators.
 - **Trades:** offers of properties, cash and Visa Office passes, with counter-offers. An offer stays open until someone accepts, declines or cancels it.
-- **Auctions:** when a property goes unbought, everyone bids with a live countdown, and late bids add time.
+- **Auctions:** when a property goes unbought, a pop-up opens for everyone to bid against a live countdown, and late bids add time.
 - **Timers:** a step timer keeps turns moving.
 - **Players who drop out:** someone who disconnects becomes *away*. If they aren't back before the timeout, they leave the game and their properties go back to the bank. The other players can vote to give them more time.
 - **Host controls:** pause, kick, hand over the host role, end the game early (the richest player wins), and rematch.
-- **Chat**, a game log, and pop-ups showing money changes.
+- **Chat**, a game log, money pop-ups, and a pop-up for every card drawn with its joke and what it does.
 - **Works on phones:** on a narrow screen, the board fills the width and everything else goes into tabs.
 - **Restarts:** the game survives server restarts with the state intact, and every timer gets at least 30 seconds after one.
 

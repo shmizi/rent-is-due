@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAPS, RETIRED_MAPS } from '../../shared/src/maps/index.ts';
 import { CLASSIC } from '../../shared/src/settings.ts';
 import type { ClientAction } from '../../shared/src/protocol.ts';
 import { gameView } from '../../shared/src/view.ts';
@@ -299,6 +300,30 @@ describe('restarts', () => {
     next.advance(2 * MINUTE + SECOND);
 
     expect(priya.room!.members.find((m) => m.host)!.name).toBe('Priya');
+  });
+});
+
+describe('retired maps', () => {
+  it('resumes a saved Harborview game and moves its rematch to World', async () => {
+    MAPS.harborview = RETIRED_MAPS.harborview;
+    const { room, conns } = await lobby(['Sam', 'Priya']);
+    await conns[0].say({ t: 'lobby', id: 'map', op: { op: 'map', mapId: 'harborview' } });
+    await conns[0].say({ t: 'lobby', id: 'start', op: { op: 'start' } });
+    delete MAPS.harborview;
+    const tokens = conns.map((c) => c.last('welcome')!.you.token!);
+
+    const next = room.restart();
+    const back = [];
+    for (const token of tokens) back.push(await next.rejoin(token));
+    expect(next.state().game!.mapId).toBe('harborview');
+    const before = next.state().game!.version;
+    await send(currentConn(next, back), { type: 'roll' });
+    expect(back.some((c) => c.last('reject'))).toBe(false);
+    expect(next.state().game!.version).toBeGreaterThan(before);
+
+    await back[0].say({ t: 'lobby', id: 'end', op: { op: 'endGame' } });
+    await back[0].say({ t: 'lobby', id: 'rematch', op: { op: 'rematch' } });
+    expect(next.state().meta!.mapId).toBe('world');
   });
 });
 

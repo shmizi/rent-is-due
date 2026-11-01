@@ -145,14 +145,17 @@ async function main() {
     }
   }
 
-  await sleep(500);
+  const settle = async () => {
+    for (let i = 0; i < 50 && new Set([...players, watcher].map((c) => c.version)).size > 1; i++) await sleep(200);
+  };
+  await settle();
   const versions = [...players, watcher].map((c) => c.version);
   report.push(`Played ${roundTrips.length} accepted actions in ${((Date.now() - startedAt) / 1000).toFixed(0)} s (turn ${host.view!.turn.number}), ${rejects} rejected tries, ${timeouts} timeouts`);
   report.push(`Action round trip (send -> patch back): median ${percentile(roundTrips, 50)} ms, p90 ${percentile(roundTrips, 90)} ms, p99 ${percentile(roundTrips, 99)} ms`);
   report.push(`Everyone on the same version at the end: ${new Set(versions).size === 1 ? `yes (${versions[0]})` : `NO ${versions.join(',')}`}. Out-of-order patches: ${players.reduce((s, p) => s + p.outOfSync, 0)}`);
 
   await host.request({ t: 'lobby', id: 'end', op: { op: 'endGame' } });
-  await sleep(500);
+  await settle();
   report.push(`Host ended the game: status ${host.view!.status}, spectator sees ${watcher.view!.status}`);
 
   for (const c of [...players, watcher]) c.ws?.close();

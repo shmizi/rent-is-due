@@ -9,6 +9,7 @@ import { Button, Confirm, CopyLink, Modal, Panel, Token } from '../ui/kit.tsx';
 import { Board } from './Board.tsx';
 import { AuctionPanel, DebtPanel, GameOver, LogPanel, TradesPanel } from './Panels.tsx';
 import { PlayersPanel } from './PlayersPanel.tsx';
+import { AuctionPopup, CardReveal } from './Popups.tsx';
 import { PropertyCard } from './PropertyCard.tsx';
 import { TradeComposer, type TradeDraft } from './TradeComposer.tsx';
 import { Dice, TurnControls, useTurnPrompt } from './TurnControls.tsx';
@@ -41,6 +42,8 @@ export function GameScreen() {
   const [draft, setDraft] = useState<TradeDraft | null | false>(false);
   const [tab, setTab] = useState<Tab>('players');
   const [menu, setMenu] = useState(false);
+  const [hiddenAuction, setHiddenAuction] = useState<number | null>(null);
+  const auctionDocked = !!game.auction && hiddenAuction === game.auction.id;
   const current = playerById(game, game.turn.player)!;
   const located = playerById(game, focusedPlayer) ?? current;
   const inspected = focusedPlayer ? located.position : selected ?? game.turn.pendingBuy ?? current.position;
@@ -60,6 +63,10 @@ export function GameScreen() {
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
     });
   }, [zoomed, focusedPlayer, locateCount, located.position]);
+
+  useEffect(() => {
+    if (game.auction) setSelected(game.auction.space);
+  }, [game.auction?.id]);
 
   const locate = (id: string) => {
     const player = playerById(game, id);
@@ -99,7 +106,7 @@ export function GameScreen() {
   ];
 
   return (
-    <div className={`play-page ${game.auction ? 'has-auction' : ''} ${roomy ? 'is-roomy' : ''}`}>
+    <div className={`play-page ${auctionDocked ? 'has-auction' : ''} ${roomy ? 'is-roomy' : ''}`}>
       {!roomy && <header className="play-header">
         <div className="flex min-w-0 items-center gap-3">
           <span className="brand-mark" aria-hidden="true">R<span>→</span></span>
@@ -160,7 +167,7 @@ export function GameScreen() {
         </main>
 
         <aside className="game-side" id="game-details">
-          {wide && <AuctionPanel />}<DebtPanel />
+          {wide && auctionDocked && <AuctionPanel />}<DebtPanel />
           {!wide && <nav className="game-tabs" aria-label="Game panels">{tabs.map((item) => <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</nav>}
           {(wide || tab === 'players') && <Panel title="Around the board" right={<span className="text-xs text-muted">{game.players.filter((p) => p.status === 'active').length} playing</span>}><PlayersPanel onLocate={locate} /></Panel>}
           {(wide || tab === 'card') && card}
@@ -176,12 +183,14 @@ export function GameScreen() {
         </aside>
       </div>
       {!wide && <div className="mobile-turnbar">
-        {game.auction ? <AuctionPanel /> : <>
+        {auctionDocked ? <AuctionPanel /> : <>
           <TurnControls compact />
           {owesMoney && <Button className="mt-2 w-full" tone="primary" onClick={() => document.getElementById('game-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Manage debt</Button>}
         </>}
       </div>}
       {!wide && spaceOpen && <Modal title={spaceName(game, inspected)} onClose={() => setSpaceOpen(false)}>{card}</Modal>}
+      <CardReveal />
+      <AuctionPopup hidden={auctionDocked} onHide={() => game.auction && setHiddenAuction(game.auction.id)} />
       {draft !== false && <TradeComposer draft={draft} onClose={() => setDraft(false)} />}
       {menu && <GameMenu onClose={() => setMenu(false)} />}
       {game.status === 'finished' && <GameOver />}
@@ -202,7 +211,7 @@ function CenterLog() {
     <div className="center-log" aria-label="Game log">
       {lines.map(({ event, i, text }, n) => (
         <p key={i} style={{ opacity: Math.max(0.35, 1 - n * 0.12) }}>
-          <span className="center-log-dot" style={{ background: event.player ? memberLook(room.members, event.player).color : '#8a806a' }} />
+          <span className="center-log-dot" style={{ background: event.player ? memberLook(room.members, event.player).color : '#8f97c0' }} />
           {text}
         </p>
       ))}
