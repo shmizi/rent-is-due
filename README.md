@@ -52,7 +52,7 @@ If you drop out, just reopen the link and you get your seat back.
 | Rent | Double rent on a full set, rent collected while at the Visa Office |
 | Building | Full set needed, even building, sell-back value, build only on your own turn |
 | Mortgages | Mortgage value, interest to pay it off, interest on traded mortgages |
-| Dice and the Visa Office | Roll again on doubles, three doubles to the Visa Office, the Visa Office fine, the most turns there |
+| Dice and the Visa Office | Roll again on doubles, three doubles to the Visa Office, the Visa Office fine (pay it any time to leave), and how many failed rolls before you're let out free |
 | Trading | Trading on or off, trade only on your turn, Visa Office passes tradable |
 | Bankruptcy and winning | Bankrupt players' properties go back to the bank or to auction. Win by being the last one standing, by a round limit or by reaching a net-worth target |
 | Room | Seats, step timer, auction timer, away timeout, spectators and spectator chat |

@@ -257,14 +257,29 @@ describe('Lockup', () => {
     expect(player(state, 'p1').position).toBe(10);
   });
 
-  it('makes the player pay and move after the last allowed turn', () => {
+  it('lets the player out free and moves them after the last allowed turn', () => {
     const state = jailed(1);
     setDice(state, [1, 2]);
+    const events = act(state, { type: 'roll', player: 'p1' });
+
+    expect(player(state, 'p1').inJail).toBe(false);
+    expect(player(state, 'p1').cash).toBe(1500);
+    expect(player(state, 'p1').position).toBe(13);
+    expect(events.find((e) => e.type === 'leftJail')?.detail).toBe('timeUp');
+  });
+
+  it('lets the player pay out after a failed roll or on another player’s turn', () => {
+    const state = jailed();
+    setDice(state, [1, 2]);
     act(state, { type: 'roll', player: 'p1' });
+    act(state, { type: 'endTurn', player: 'p1' });
+    expect(state.turn.player).toBe('p2');
+
+    act(state, { type: 'payJailFine', player: 'p1' });
 
     expect(player(state, 'p1').inJail).toBe(false);
     expect(player(state, 'p1').cash).toBe(1450);
-    expect(player(state, 'p1').position).toBe(13);
+    expect(player(state, 'p1').position).toBe(10);
   });
 
   it('rejects the fine when the player is not in Lockup', () => {

@@ -155,8 +155,8 @@ export const SECTIONS: RuleSection[] = [
         get: (s) => s.threeDoublesJail,
         set: (s, v) => (s.threeDoublesJail = v)
       },
-      { id: 'fine', kind: 'number', label: 'Visa Office fine', desc: 'Pay this to leave the Visa Office', min: 0, max: 200, step: 10, prefix: '$', get: (s) => s.jailFine, set: (s, v) => (s.jailFine = v) },
-      { id: 'maxJail', kind: 'number', label: 'Longest stay', desc: 'Turns at the Visa Office before you must pay', min: 1, max: 5, step: 1, suffix: ' turns', get: (s) => s.maxJailTurns, set: (s, v) => (s.maxJailTurns = v) }
+      { id: 'fine', kind: 'number', label: 'Visa Office fine', desc: 'Pay this to leave the Visa Office at any time', min: 0, max: 200, step: 10, prefix: '$', get: (s) => s.jailFine, set: (s, v) => (s.jailFine = v) },
+      { id: 'maxJail', kind: 'number', label: 'Longest stay', desc: 'Failed rolls before you’re let out free', min: 1, max: 5, step: 1, suffix: ' turns', get: (s) => s.maxJailTurns, set: (s, v) => (s.maxJailTurns = v) }
     ]
   },
   {

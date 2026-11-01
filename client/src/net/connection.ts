@@ -29,7 +29,7 @@ export interface RoomState {
 }
 
 const LOG_KEEP = 150;
-const VERSIONED = new Set(['roll', 'buy', 'decline', 'endTurn', 'payJailFine', 'useJailCard']);
+const VERSIONED = new Set(['roll', 'buy', 'decline', 'endTurn']);
 
 export function tokenKey(code: string): string {
   return `rent-is-due:${code}`;

@@ -46,10 +46,9 @@ export function roll(state: GameState, player: PlayerState, events: GameEvent[])
 
     player.jailTurns++;
     if (player.jailTurns >= s.maxJailTurns) {
-      charge(state, player, feeCreditor(state, 'jailFines'), s.jailFine, 'jailFine', events);
       player.inJail = false;
       player.jailTurns = 0;
-      emit(state, events, { type: 'leftJail', player: player.id, detail: 'forced' });
+      emit(state, events, { type: 'leftJail', player: player.id, detail: 'timeUp' });
       moveBy(state, player, d1 + d2, events);
       resolveLanding(state, player, ctx, events);
     }
@@ -70,7 +69,6 @@ export function roll(state: GameState, player: PlayerState, events: GameEvent[])
 }
 
 export function payJailFine(state: GameState, player: PlayerState, events: GameEvent[]): void {
-  requireTurn(state, player, ['preRoll']);
   requireCalm(state);
   if (!player.inJail) fail('notInJail', 'You are not at the Visa Office.');
   if (player.cash < state.settings.jailFine) fail('cannotAfford', 'You cannot afford the fine.');
@@ -82,7 +80,6 @@ export function payJailFine(state: GameState, player: PlayerState, events: GameE
 }
 
 export function useJailCard(state: GameState, player: PlayerState, events: GameEvent[]): void {
-  requireTurn(state, player, ['preRoll']);
   requireCalm(state);
   if (!player.inJail) fail('notInJail', 'You are not at the Visa Office.');
 

@@ -66,18 +66,22 @@ export function useTurnPrompt(): { title: string; sub: string; choices: Choice[]
     return { title: `${nameOf(game, debt.debtor)} owes ${money(debt.amount)}`, sub: 'Waiting while they raise the cash', choices: [], timer: null };
   }
 
+  const leave: Choice[] = [];
+  if (me?.status === 'active' && me.inJail) {
+    if (me.cash >= s.jailFine) leave.push({ label: `Pay ${money(s.jailFine)} to leave`, action: { type: 'payJailFine' }, tone: 'secondary' });
+    if (me.jailCards.length > 0) leave.push({ label: 'Use card', action: { type: 'useJailCard' }, tone: 'secondary' });
+  }
+
   if (!me || game.turn.player !== me.id) {
     const away = current && !current.connected;
-    return { title: `${current?.name ?? 'Someone'}’s turn`, sub: away ? 'They’re away. The game waits for them.' : 'Waiting for their move', choices: [], timer };
+    return { title: `${current?.name ?? 'Someone'}’s turn`, sub: away ? 'They’re away. The game waits for them.' : leave.length ? 'You can pay to leave the Visa Office now' : 'Waiting for their move', choices: leave, timer };
   }
 
   const turn = game.turn;
 
   if (turn.phase === 'preRoll' && me.inJail) {
-    const choices: Choice[] = [{ label: 'Roll for doubles', action: { type: 'roll' }, tone: 'primary' }];
-    if (me.cash >= s.jailFine) choices.push({ label: `Pay ${money(s.jailFine)}`, action: { type: 'payJailFine' }, tone: 'secondary' });
-    if (me.jailCards.length > 0) choices.push({ label: 'Use card', action: { type: 'useJailCard' }, tone: 'secondary' });
-    return { title: 'You’re stuck at the Visa Office', sub: `Attempt ${me.jailTurns + 1} of ${s.maxJailTurns}`, choices, timer };
+    const last = me.jailTurns + 1 >= s.maxJailTurns;
+    return { title: 'You’re stuck at the Visa Office', sub: `Attempt ${me.jailTurns + 1} of ${s.maxJailTurns}${last ? '. No doubles and you’re let out free.' : ''}`, choices: [{ label: 'Roll for doubles', action: { type: 'roll' }, tone: 'primary' }, ...leave], timer };
   }
 
   if (turn.phase === 'preRoll') return { title: 'Your turn', sub: 'Build or trade first if you like', choices: [{ label: 'Roll dice', action: { type: 'roll' }, tone: 'primary' }], timer };
@@ -98,7 +102,7 @@ export function useTurnPrompt(): { title: string; sub: string; choices: Choice[]
 
   if (turn.canRollAgain) return { title: 'Doubles!', sub: 'Roll again', choices: [{ label: 'Roll again', action: { type: 'roll' }, tone: 'primary' }], timer };
 
-  return { title: 'Your move is done', sub: 'Build, trade or end your turn', choices: [{ label: 'End turn', action: { type: 'endTurn' }, tone: 'primary' }], timer };
+  return { title: 'Your move is done', sub: 'Build, trade or end your turn', choices: [{ label: 'End turn', action: { type: 'endTurn' }, tone: 'primary' }, ...leave], timer };
 }
 
 function priceOf(game: GameView, index: number): number {

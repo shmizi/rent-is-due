@@ -652,4 +652,8 @@ Harborview is gone from the game. It's kept only as a test fixture in `shared/te
 - **Auction pop-up:** an auction opens a pop-up in the middle of the screen, or at the bottom on phones, for every player and spectator. **Hide** docks it back in the side panel or the phone's bottom bar, and the space card switches to the property being auctioned.
 - **Pieces:** every piece is a circle in the player's colour with their initial. The lobby's shape picker is gone. Colours are still unique per room.
 
+### Visa Office rules (the user's)
+- **Pay any time:** a player at the Visa Office can pay the $50 fine or use a pass whenever they like, on their own turn or anyone else's, unless an auction or debt is open. These two actions no longer need the latest game version, so a game that has moved on doesn't reject them.
+- **No fine at the end:** if the last allowed roll isn't doubles, the player is let out free and moves by that roll. The log says they were let out after the last attempt.
+
 131 tests pass. The three-player Edge test showed no browser errors, and a two-player Edge game showed the card and auction pop-ups on desktop and phone.

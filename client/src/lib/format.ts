@@ -64,7 +64,8 @@ export function describe(event: GameEvent, game: GameView): string | null {
         doubles: `${who} rolled doubles and got out of the Visa Office`,
         paid: `${who} paid the fine and left the Visa Office`,
         card: `${who} used a get-out card`,
-        forced: `${who} paid the fine after the last turn at the Visa Office`
+        forced: `${who} paid the fine after the last turn at the Visa Office`,
+        timeUp: `${who} was let out of the Visa Office after the last attempt`
       }[event.detail ?? ''] ?? `${who} left the Visa Office`;
     case 'card': {
       const card = cardOf(event.detail);
