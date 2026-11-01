@@ -276,6 +276,8 @@ export type SystemAction =
   | { type: 'resume' }
   | { type: 'restore' }
   | { type: 'endGame' }
+  | { type: 'extendDeadlines'; minMs: number }
+  | { type: 'remove'; player: PlayerId }
   | { type: 'disconnect'; player: PlayerId }
   | { type: 'reconnect'; player: PlayerId };
 

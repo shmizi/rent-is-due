@@ -53,7 +53,7 @@ export function makeRand(seed: number): Rand {
 
 const COLORS = ['#FF7A59', '#3DA5FF', '#B07CFF', '#9BE15D', '#FFC145', '#FF6FB5', '#4DE1E1', '#F2F2F7'];
 
-function pickActor(state: GameState): PlayerId | null {
+export function pickActor(state: GameState): PlayerId | null {
   const connected = (id: PlayerId) => state.players.some((p) => p.id === id && p.connected && isActive(p));
 
   if (state.auction) {

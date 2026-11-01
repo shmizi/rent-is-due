@@ -4,12 +4,36 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "simulate": "node scripts/simulate.ts"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p worker && tsc --noEmit -p client",
+    "simulate": "node scripts/simulate.ts",
+    "predev": "node -e \"require('fs').mkdirSync('public',{recursive:true})\"",
+    "dev": "concurrently -k -n worker,client -c blue,green \"wrangler dev --port 8787\" \"vite --config client/vite.config.ts\"",
+    "build": "vite build --config client/vite.config.ts",
+    "lan": "npm run build && wrangler dev --ip 0.0.0.0 --port 8787",
+    "e2e": "npm run build && node scripts/room-e2e.ts",
+    "ui-test": "npm run build && node scripts/ui-test.ts",
+    "deploy": "npm run build && wrangler deploy",
+    "types": "wrangler types worker/worker-configuration.d.ts"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "playwright-core": "^1.64.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.5"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "wrangler": "^4.156.0"
+  },
+  "dependencies": {
+    "@fontsource/fredoka": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "motion": "^14.9.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }

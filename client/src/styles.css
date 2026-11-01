@@ -1,0 +1,234 @@
+@import 'tailwindcss';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/fredoka/500.css';
+@import '@fontsource/fredoka/600.css';
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Fredoka', 'Inter', system-ui, sans-serif;
+
+  --color-ink: #0f1226;
+  --color-panel: #1a1f3d;
+  --color-raised: #252b52;
+  --color-line: #2f3663;
+  --color-text: #eef0ff;
+  --color-muted: #a3a9d1;
+  --color-soft: #d9dcf2;
+  --color-mint: #3ddc97;
+  --color-gold: #ffc145;
+  --color-danger: #ff8a8a;
+  --color-amber: #ffb454;
+  --color-lilac: #d2b6ff;
+
+  --color-tile: #fbf7ee;
+  --color-tile-mortgaged: #e3d8c1;
+  --color-board-line: #d6ccb6;
+  --color-board-center: #efe7d6;
+  --color-board-text: #2a2622;
+  --color-board-sub: #5a5146;
+  --color-board-pill: #ede4d0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-mint);
+  outline-offset: 2px;
+}
+
+.money {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.board {
+  container-type: inline-size;
+  container-name: board;
+  display: grid;
+  aspect-ratio: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 16px;
+  background: var(--color-board-line);
+  color: var(--color-board-text);
+}
+
+.board-center {
+  border-radius: 1cqi;
+  background: var(--color-board-center);
+}
+
+.tile {
+  position: relative;
+  container-type: size;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: var(--color-tile);
+  color: inherit;
+  font: inherit;
+}
+
+.tile[data-mortgaged='true'] {
+  background: repeating-linear-gradient(135deg, var(--color-tile) 0 6px, var(--color-tile-mortgaged) 6px 12px);
+}
+
+.tile-inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100cqw;
+  height: 100cqh;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.tile[data-side='left'] .tile-inner {
+  width: 100cqh;
+  height: 100cqw;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.tile[data-side='right'] .tile-inner {
+  width: 100cqh;
+  height: 100cqw;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.tile[data-side='top'] .tile-inner {
+  flex-direction: column-reverse;
+}
+
+.tile-band {
+  flex: 0 0 22%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4%;
+}
+
+.tile-name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4%;
+  font-size: clamp(8px, 18cqmin, 12px);
+  font-weight: 600;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.tile-price {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 6%;
+}
+
+.tile-price span {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--color-board-pill);
+  font-size: clamp(8px, 17cqmin, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tile-icon {
+  display: flex;
+  justify-content: center;
+  padding-top: 6%;
+  color: var(--color-board-sub);
+}
+
+.corner-label {
+  font-family: var(--font-display);
+  font-size: clamp(9px, 17cqmin, 18px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.corner-sub {
+  font-size: clamp(8px, 11cqmin, 12px);
+  color: var(--color-board-sub);
+}
+
+.token {
+  width: clamp(9px, 30cqmin, 24px);
+  height: clamp(9px, 30cqmin, 24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0px, 15cqmin, 11px);
+  font-weight: 700;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.4));
+}
+
+@container board (max-width: 560px) {
+  .tile-name,
+  .tile-price,
+  .corner-sub {
+    display: none;
+  }
+
+  .tile-band {
+    flex-basis: 18%;
+  }
+
+  .tile-band svg {
+    display: none;
+  }
+
+  .token {
+    font-size: 0;
+  }
+}
+
+.tile-icon svg,
+.corner-icon {
+  width: 34cqmin;
+  height: 34cqmin;
+}
+
+.tile-band svg {
+  width: 16cqmin;
+  height: 16cqmin;
+}
+
+@media (max-width: 640px) {
+  .board {
+    padding: 3px;
+    gap: 1px;
+    border-radius: 10px;
+  }
+}

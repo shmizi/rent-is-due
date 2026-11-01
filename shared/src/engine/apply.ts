@@ -1,18 +1,18 @@
-import type { Action, GameEvent, GameState } from '../types.ts';
+import type { Action, GameEvent, GameState, SystemAction } from '../types.ts';
 import { dropOut, placeBid } from './auction.ts';
 import { declareBankruptcy, eliminate } from './bankruptcy.ts';
 import { build, mortgage, sellBuilding, unmortgage } from './building.ts';
 import { activePlayers, emit, fail, findPlayer, GameError, isActive } from './helpers.ts';
 import { settleDebts } from './money.ts';
 import { leaders } from './netWorth.ts';
-import { disconnect, pause, reconnect, restore, resume, syncTimers, tick, voteExtend } from './timers.ts';
+import { disconnect, extendDeadlines, pause, reconnect, restore, resume, syncTimers, tick, voteExtend } from './timers.ts';
 import { acceptTrade, cancelTrade, cleanupTrades, counterTrade, declineTrade, proposeTrade } from './trades.ts';
 import { buy, decline, endTurn, payJailFine, roll, useJailCard } from './turn.ts';
 import { finishGame } from './turnOrder.ts';
 
-const ALLOWED_WHILE_PAUSED = new Set(['resume', 'disconnect', 'reconnect', 'tick', 'restore', 'leave', 'endGame']);
+const ALLOWED_WHILE_PAUSED = new Set(['resume', 'disconnect', 'reconnect', 'tick', 'restore', 'leave', 'endGame', 'remove', 'extendDeadlines']);
 
-type SystemType = 'tick' | 'pause' | 'resume' | 'restore' | 'endGame' | 'disconnect' | 'reconnect';
+type SystemType = SystemAction['type'];
 
 function runPlayerAction(state: GameState, action: Exclude<Action, { type: SystemType }>, now: number, events: GameEvent[]): void {
   const player = findPlayer(state, action.player);
@@ -90,6 +90,16 @@ export function applyAction(state: GameState, action: Action, now: number): Game
       emit(state, events, { type: 'endedByHost' });
       finishGame(state, leaders(state, activePlayers(state).map((p) => p.id)), events);
       break;
+    case 'extendDeadlines':
+      extendDeadlines(state, now, action.minMs);
+      break;
+    case 'remove': {
+      const target = findPlayer(state, action.player);
+      if (!isActive(target)) fail('notActive', 'That player is already out.');
+      emit(state, events, { type: 'removed', player: target.id });
+      eliminate(state, target, 'left', now, events);
+      break;
+    }
     case 'disconnect':
       disconnect(state, findPlayer(state, action.player), now, events);
       break;

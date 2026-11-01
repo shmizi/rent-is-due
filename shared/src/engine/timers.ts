@@ -169,6 +169,16 @@ export function restore(state: GameState, now: number, events: GameEvent[]): voi
   emit(state, events, { type: 'restored' });
 }
 
+export function extendDeadlines(state: GameState, now: number, minMs: number): void {
+  const earliest = now + Math.max(0, minMs);
+
+  if (state.auction && state.auction.deadline < earliest) state.auction.deadline = earliest;
+  if (state.timers.step?.deadline != null && state.timers.step.deadline < earliest) state.timers.step.deadline = earliest;
+  for (const player of state.players) {
+    if (player.away && player.away.deadline < earliest) player.away.deadline = earliest;
+  }
+}
+
 export function nextDeadline(state: GameState): number | null {
   if (state.status !== 'playing' || state.timers.pausedAt !== null) return null;
 

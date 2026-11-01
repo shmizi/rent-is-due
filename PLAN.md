@@ -4,7 +4,7 @@ An original online property-trading board game for a small group of friends. You
 
 It is **not a Monopoly copy**. The space names, card decks, board art and branding are all original.
 
-Status: Phases 0 and 1 are done. The look preview is a design canvas at https://claude.ai/artifact/UT6ub1CstpNoP7G8eqpYDC, and the **chosen look is a cream board in a navy frame** (2026-11-01). The rules engine, Harborview and the simulator are in `shared/`, and the results are in section 14. Phase 2 (the room Durable Object) is next.
+Status: Phases 0, 1 and 2 are done. The look preview is a design canvas at https://claude.ai/artifact/UT6ub1CstpNoP7G8eqpYDC, and the **chosen look is a cream board in a navy frame** (2026-11-01). The rules engine, Harborview and the simulator are in `shared/`, with results in section 14. The room server is in `worker/`, with results in section 15. The browser client is in `client/`, with results in section 16. Phase 4 (deploy and the first real game night) is next.
 
 The preview's Harborview space names, the card deck names (Dispatch, Wildcard), the corner names (Start, Lockup, Plaza, Busted!), the colour-set icons and the rent numbers are drafts. They get finalised in Phase 1.
 
@@ -56,10 +56,10 @@ tests/    engine unit tests, simulations, room tests
 The server owns the game. Browsers send requests ("roll", "bid 120"); the room object checks each one, applies it, saves it, then sends each player their own updated view.
 
 ### Room storage (SQLite inside each room object)
-- `meta`: schema version, room code, created and last-action times
-- `state`: one row holding the version number and the full game state as JSON
+- `meta`: one JSON row with the schema version, room code, phase (lobby, playing or finished), host, lobby settings and preset, muted spectators, reconnect grace timers and usage counters
+- `game`: one row holding the version number and the full game state as JSON
 - `actions`: an append-only log (version, player, action, time), used for debugging and replays
-- `players`: player id, token hash, name, colour, token icon, role (host, player or spectator), last seen
+- `members`: member id, token hash, name, colour, token shape, role (player or spectator), join time
 - `chat`: the last 200 messages
 
 The state and its action-log row are written in the same transaction. Saved state carries a schema version, so code updates can still load older saves.
@@ -258,7 +258,7 @@ How they interact:
   - All state, including timer deadlines and the random-number state, is in the room's SQLite, so nothing is re-rolled after a restart.
   - When a room starts up again:
     - any deadline with less than 30 s left is pushed to 30 s
-    - everyone starts as away, with the away clock starting from the restart
+    - everyone who was connected gets the normal 15-second reconnect grace, and only becomes away (with a fresh away clock) if they don't come back within it. This replaced the earlier "everyone starts as away" idea in Phase 2, because a restart then looks like a short blip.
   - Browsers reconnect automatically and show a "Reconnecting…" banner.
   - A deploy drops all sockets for a moment, so don't deploy during a game night.
 - **Clean-up** (by alarm):
@@ -336,8 +336,8 @@ Workers Free limits as of 2026-11-01, against a rough estimate for a 3-hour, 6-p
 |---|---|---|
 | **0. Look preview** ✅ | A clickable, look-only preview of the lobby and board, cream vs dark, on desktop and phone | Done 2026-11-01: cream board chosen |
 | **1. Engine + Harborview** ✅ | Game state, `applyAction()`, map format and checker, cards, net worth, bankruptcy and leaving, every setting in section 4 with the restrictions in section 5. Unit tests, plus 10,000 simulated bot games checking that: money adds up, nobody has negative cash outside debt, every game ends, and restrictions hold. Actions timed against the 10 ms CPU limit | Done 2026-11-01, see section 14 |
-| **2. Room object** | Worker entry, RoomObject, SQLite layout, alarm scheduler, hibernating sockets, tokens, reconnects, per-player views and changes-only updates, votes, host hand-over, pause, rate limits, clean-up | A scripted 6-client game with random disconnects survives forced restarts mid-auction and mid-debt and resumes exactly. Usage per game measured |
-| **3. Client** | Lobby (share link, presets, rules with descriptions and greyed-out combinations, appearance), board, property cards, turn controls, auctions, trades, debt screen, log, chat, spectator view, reconnecting banner, phone layout | A full game is playable on 3+ devices over the local network |
+| **2. Room object** ✅ | Worker entry, RoomObject, SQLite layout, alarm scheduler, hibernating sockets, tokens, reconnects, per-player views and changes-only updates, votes, host hand-over, pause, rate limits, clean-up | Done 2026-11-01, see section 15 |
+| **3. Client** ✅ | Lobby (share link, presets, rules with descriptions and greyed-out combinations, appearance), board, property cards, turn controls, auctions, trades, debt screen, log, chat, spectator view, reconnecting banner, phone layout | Done 2026-11-01 in three real browsers (section 16). Trying it on real phones over Wi-Fi is the first step of Phase 4 |
 | **4. Deploy + playtest** | Deploy to Workers Free, then a real game night | Bugs logged, timers tuned, real game lengths recorded |
 | **5. More maps** | Pocket Town, Metro Sprawl and a World map (countries as colour sets, cities as streets, airports as the transit stops, a flag badge per set), per-map themes, 10 colour sets | Each passes the map checker and gets a playtest |
 | **6. Extras** | Picked from the deferred list after playtesting | — |
@@ -416,3 +416,117 @@ Classic games last a median of about 67 rounds, with 10% going past about 105 ro
 2. **Endless games:** with last-one-standing, two players with built sets and huge cash piles can trade rent forever. Added the `endGame` action, which the host triggers: the richest by net worth wins. The lobby or in-game menu needs an "End game" button for the host in Phase 3. A softer default, such as suggesting a round limit, is worth considering after playtesting.
 3. **Draft data now in code:** the Harborview space names, the card texts, the 7%-of-price rent ladder (5×, 14×, 32×, 42× and 52× the base rent for 1–4 houses and a hotel) and the house costs are all in `shared/src/maps/harborview.ts` and `shared/src/cards.ts`, and can still be renamed or retuned. The map checker and tests protect the structure.
 4. **Turn order** is shuffled at the start of every game.
+
+---
+
+## 15. Phase 2 results (2026-11-01)
+
+### What exists
+| Path | What it is |
+|---|---|
+| `wrangler.jsonc` | Worker `rent-is-due`, the `ROOMS` Durable Object (SQLite-backed), static files from `public/`, with `/api/*` and `/ws/*` going to the Worker first |
+| `worker/src/index.ts` | Worker entry: `POST /api/rooms` creates a room (6-character code, no look-alike letters), `GET /api/rooms/CODE` gets room info, `/ws/CODE` opens the WebSocket, and `GET /api/rooms/CODE/debug` returns the full state (only when `DEV=true`). Everything else is served from `public/` |
+| `worker/src/room.ts` | The `RoomObject` Durable Object: a thin adapter that handles hibernating WebSockets, the alarm, SQLite, and a `ping`/`pong` auto-reply |
+| `worker/src/core/room.ts` | All room logic, written without any Cloudflare code so it can be tested in Node |
+| `shared/src/protocol.ts` | The messages between browser and server, which the Phase 3 client will use |
+| `shared/src/view.ts`, `shared/src/sync.ts` | Per-player views (deck order and other players' pending offers are hidden) and the changes-only patches |
+| `public/index.html` | A placeholder page until Phase 3 |
+| `scripts/room-e2e.ts` | `npm run e2e`: plays a full 6-bot game against Cloudflare's runtime running locally, using real WebSockets, killing and restarting the server mid-auction and mid-debt |
+
+Commands: `npm test`, `npm run typecheck`, `npm run e2e`, `npm run dev` (local server on port 8787), `npm run deploy`.
+
+### What the room does
+- **Lobby:**
+  - The first player in becomes the host.
+  - Everyone gets a unique colour, and can change colour, token shape and name.
+  - Only the host can change settings or presets. They go through `normalizeSettings`, and the notes come back for the lobby to show.
+  - The host starts the game once there are at least 2 players, and can start a rematch after a game ends.
+- **Joining:** you get a secret token, and only its SHA-256 hash is stored. Reconnecting with the token gives you your seat back.
+  - Anyone joining once the seats are full, or after the game has started, becomes a spectator, unless spectators are off.
+- **Playing:** a player's action is checked against the engine, saved together with its action-log row in one transaction, then sent to everyone as a patch. Each player gets their own patch, and spectators share one.
+  - Patches carry their version numbers, so a client that misses one asks for a fresh snapshot.
+  - `expectedVersion` blocks stale clicks.
+- **Connections:**
+  - A dropped socket gets a 15-second grace before the player is marked away.
+  - The host role passes on after the host has been gone for 2 minutes.
+  - The host can kick, pause, resume, end the game, and mute spectators.
+  - Chat messages are limited to 300 characters, the last 200 are kept, and spectator chat follows the setting.
+  - Each person can send at most 25 messages every 2 seconds.
+- **One alarm per room:** it handles grace timers, host hand-over, game deadlines and idle clean-up (lobby after 1 day, game after 14 days, finished game after 30 days).
+
+### Tests
+- 110 tests pass, including 20 room tests and 2 whole-game tests that run through the room logic with Node's built-in SQLite standing in for Cloudflare's.
+- Those whole-game tests play 9 bot games in total, with:
+  - a spectator
+  - random drops and reconnects
+  - a restart mid-auction and another mid-debt
+- After **every step**, every client's patched view is checked against the server's view for that player.
+- Bugs found and fixed:
+  - a reconnecting player could get a patch before their welcome message
+  - member order was random when people joined in the same millisecond
+
+### Run against Cloudflare's runtime (local `wrangler dev`, 6 bots, 1 spectator, starting cash $900 to force auctions and debts)
+| | Seed 7 | Seed 8 |
+|---|---|---|
+| Game | finished on its own, 748 turns, 2,054 engine actions | finished on its own, 238 turns, 907 engine actions |
+| Restart mid-auction | back in 1.6 s, state identical, auction clock pushed to 30 s | back in 1.7 s, identical, 30 s |
+| Restart mid-debt | back in 1.5 s, identical | back in 1.6 s, identical |
+| Grace alarm | player marked away after 18 s, away clock 297 s | same |
+| Random drops and reconnects | 20 | 11 |
+| Clients out of sync | 0 (147 checks) | 0 (73 checks) |
+| Invariants | all hold | all hold |
+| Rows written | 10,411 (10.4% of the free daily limit) | 4,640 (4.6%) |
+| Durable Object requests | about 250 (0.2%) | about 160 (0.2%) |
+
+**Usage:** about 5 rows are written per engine action (game state, action log, room meta, plus the occasional chat or alarm). Rows written is the limit that matters: a long 6-player game uses about 10% of the free day, so roughly 10–20 full games a day fit. If that ever gets tight, saving room meta less often would cut it to about 3 rows per action.
+
+### Still to check
+- **CPU on Cloudflare itself:** local `wrangler dev` doesn't enforce or report the 10 ms limit. Check it after the first deploy in Phase 4, in the Workers dashboard or with `wrangler tail`.
+- **Hibernation in production:** local dev keeps the object in memory. The room reloads from SQLite in its constructor, and the tests already cover that path (a new room object over the same database).
+
+---
+
+## 16. Phase 3 results (2026-11-01)
+
+### What exists
+| Path | What it is |
+|---|---|
+| `client/` | React 19 + TypeScript + Vite 8 + Tailwind 4 + Motion. The fonts (Inter and Fredoka) are bundled, with no Google requests. `npm run build` writes the site to `public/`, which the Worker serves |
+| `client/src/net/connection.ts` | The room connection: the seat token is kept in the browser per room, it reconnects with back-off, sends a ping every 25 s, applies patches and asks for a snapshot if it misses one, adjusts for clock differences, and shows errors as toasts |
+| `client/src/screens/` | Home page (create a room, or join with a code) and the room page (name prompt, or "Just watch") |
+| `client/src/lobby/` | Lobby: share link, players with host badge and kick, your colour, token shape and name, map cards (Harborview, with Pocket Town, Metro Sprawl and World marked "coming later"), Classic and Quick presets, and every rule from section 4. Each rule shows its description, a House rule badge where it applies, and a greyed-out reason when it can't be used. Only the host can edit, and the server's notes show up |
+| `client/src/game/` | Game screen: the cream board (any size that's a multiple of 4), tokens that slide between spaces, owner outlines, houses and hotels, mortgage stripes, dice, turn controls, step timer, players with cash and net worth, "+$200" and "−$120" pop-ups, "Vote +5 min" for away players, property cards with build, sell, mortgage and trade buttons, auction bidding, the debt screen with quick sell and mortgage buttons and a bankruptcy confirmation, a trade composer with counter-offers, game log, chat, a menu (pause, end game, leave), and game over with a rematch |
+| `client/test/lib.test.ts` | Every lobby rule writes and reads back through `normalizeSettings`, every event turns into a sentence, and the board positions are checked |
+| `scripts/ui-test.ts` | `npm run ui-test`: three real Edge browsers (two desktop, one phone-sized) play through the UI and save screenshots |
+
+**Layouts**
+- **1,100 px and wider:** three columns — log and chat, the board with turn controls in its centre, then players, auction, debt, property card and trades.
+- **Narrower (phones):** header with your cash, the full-width board (tile names hidden; tap a tile for its card), the turn buttons, then tabs for Players, Card, Trades, Log and Chat.
+
+**Commands**
+- `npm run dev`: Worker on 8787 plus Vite on 5173, with live reload. Open http://localhost:5173.
+- `npm run lan`: builds the client and serves everything on port 8787 to your Wi-Fi. Open `http://<this PC's IP>:8787` on phones.
+- `npm run ui-test`: the browser test.
+
+### Browser test (Edge, three players)
+These all passed, with no browser errors:
+- a room created from the home page
+- two people joining through the link
+- the host's rule change showing up for the others
+- turning off doubles greying out "three doubles"
+- the game starting for everyone
+- 60 turn actions clicked through the UI (rolls, buys, end turn)
+- property cards
+- Priya sending Sam a $25 offer, Sam accepting it, and the cash moving
+- Leo closing the tab and reopening the link: he's back in the same seat without typing his name
+- the host ending the game, with the game-over screen ranking players by net worth
+
+Screenshots were checked for the desktop board, the phone board, the lobby, property cards, the trade composer and game over. Fixes from looking at them: text and tokens on the tiles were too small, long names now hyphenate properly, and game over shows net worth.
+
+115 tests pass across the engine, room and client, and all three projects type-check.
+
+### Not done or not checked yet
+- **Real phones over Wi-Fi:** Phase 4, step 1. Run `npm run lan`, allow Node or workerd through Windows Firewall if it asks, and open `http://<PC IP>:8787` on each phone.
+- **Auctions in the browser test:** the test's bots always bought, so no auction ran in the UI. The auction panel is built, and the auction rules are tested in the engine and room tests.
+- **Visual check of the debt screen and Lockup buttons:** both are built, but the test didn't land on them.
+- **Accessibility:** controls are real buttons and switches with labels, but there's been no screen-reader pass.
