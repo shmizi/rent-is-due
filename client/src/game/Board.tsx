@@ -65,7 +65,7 @@ export function Board({
         const owner = prop?.owner ? memberLook(members, prop.owner) : null;
         const group = space.kind === 'street' ? map.groups[space.group] : null;
         const icon = spaceIcon(space.kind, space.name);
-        const ownerName = prop?.owner ? (prop.owner === you ? 'You' : members.find((m) => m.id === prop.owner)?.name ?? '') : '';
+        const ownerName = prop?.owner ? (prop.owner === you ? 'You' : game.players.find((p) => p.id === prop.owner)?.name ?? '') : '';
         const price = 'price' in space
             ? money(space.price)
             : space.kind === 'tax'

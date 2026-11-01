@@ -30,7 +30,7 @@ function useMedia(query: string): boolean {
 type Tab = 'players' | 'card' | 'trades' | 'log' | 'chat';
 
 export function GameScreen() {
-  const { game, room, me, you } = useGame();
+  const { game, room, me, you, state, connection } = useGame();
   const wide = useMedia('(min-width: 1024px)');
   const roomy = useMedia('(min-width: 1280px)');
   const [selected, setSelected] = useState<number | null>(null);
@@ -67,6 +67,18 @@ export function GameScreen() {
   useEffect(() => {
     if (game.auction) setSelected(game.auction.space);
   }, [game.auction?.id]);
+
+  const renamed = useRef<Map<string, string> | null>(null);
+  useEffect(() => {
+    const raw = state.game!;
+    const now = new Map(game.players.flatMap((p) => { const before = raw.players.find((r) => r.id === p.id); return before && before.name !== p.name ? [[p.id, p.name] as const] : []; }));
+    if (renamed.current) {
+      for (const [id, name] of now) {
+        if (renamed.current.get(id) !== name) connection.toast(`${raw.players.find((r) => r.id === id)?.name} owns all of Israel and is now ${name}`);
+      }
+    }
+    renamed.current = now;
+  }, [game]);
 
   const locate = (id: string) => {
     const player = playerById(game, id);
@@ -210,7 +222,7 @@ function CenterLog() {
   return (
     <div className="center-log" aria-label="Game log">
       {lines.map(({ event, i, text }, n) => (
-        <p key={i} style={{ opacity: Math.max(0.35, 1 - n * 0.12) }}>
+        <p key={i} style={{ opacity: Math.max(0.4, 1 - n * 0.1) }}>
           <span className="center-log-dot" style={{ background: event.player ? memberLook(room.members, event.player).color : '#8f97c0' }} />
           {text}
         </p>

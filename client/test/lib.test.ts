@@ -7,6 +7,8 @@ import { describe, money } from '../src/lib/format.ts';
 import { sidePosition } from '../src/lib/game.ts';
 import { spaceInfo } from '../src/lib/spaces.ts';
 import { SECTIONS } from '../src/lobby/rules.ts';
+import { withAliases } from '../src/lib/aliases.ts';
+import { createGame } from '../../shared/src/engine/create.ts';
 
 group('lobby rule rows', () => {
   it('reads back every value it writes, and the server keeps it', () => {
@@ -66,5 +68,20 @@ group('board layout', () => {
     const result = simulateGame({ seed: 9, players: 3, maxActions: 300 });
     const game = gameView(result.finalState, null);
     for (let i = 0; i < 40; i++) expect(spaceInfo(game, i).name).toBe(WORLD.spaces[i].name);
+  });
+});
+
+group('aliases', () => {
+  it('renames whoever owns all of Israel, and only while they do', () => {
+    const state = createGame({ mapId: 'world', settings: structuredClone(CLASSIC), players: [{ id: 'p1', name: 'Sam', color: '#000' }, { id: 'p2', name: 'Mei', color: '#fff' }], seed: 1, now: 0 });
+    const israel = WORLD.spaces.flatMap((s, i) => (s.kind === 'street' && s.group === 'il' ? [i] : []));
+    for (const i of israel) state.props[i] = { owner: 'p1', houses: 0, mortgaged: false };
+
+    const named = withAliases(gameView(state, null));
+    expect(named.players.find((p) => p.id === 'p1')!.name).toBe('Benjamin Netanyahu');
+    expect(named.players.find((p) => p.id === 'p2')!.name).toBe('Mei');
+
+    state.props[israel[0]] = { owner: 'p2', houses: 0, mortgaged: false };
+    expect(withAliases(gameView(state, null)).players.find((p) => p.id === 'p1')!.name).toBe('Sam');
   });
 });

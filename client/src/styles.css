@@ -5,10 +5,13 @@
 @import '@fontsource/inter/700.css';
 @import '@fontsource/fredoka/500.css';
 @import '@fontsource/fredoka/600.css';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
 
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-display: 'Fredoka', 'Inter', system-ui, sans-serif;
+  --font-board: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
 
   --color-ink: #0f1226;
   --color-panel: #1a1f3d;
@@ -27,9 +30,9 @@
   --color-tile-mortgaged: rgb(255 255 255 / 0.02);
   --color-board-line: rgb(255 255 255 / 0.13);
   --color-board-center: rgb(255 255 255 / 0.05);
-  --color-board-text: #f1f3ff;
-  --color-board-sub: #aab2d8;
-  --color-board-pill: rgb(255 255 255 / 0.13);
+  --color-board-text: #ffffff;
+  --color-board-sub: #c3c9ea;
+  --color-board-pill: rgb(0 0 0 / 0.32);
 }
 
 html,
@@ -94,19 +97,19 @@ button:disabled {
   padding: 0;
   border: 1px solid var(--color-board-line);
   border-radius: 4px;
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.11), var(--color-tile) 55%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  background: linear-gradient(160deg, rgb(52 60 116 / 0.8), rgb(27 32 68 / 0.86));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
   color: inherit;
   transition: background 0.15s;
   font: inherit;
 }
 
 .tile:hover {
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.17), rgb(255 255 255 / 0.1) 55%);
+  background: linear-gradient(160deg, rgb(68 78 144 / 0.85), rgb(38 45 92 / 0.9));
 }
 
 .tile[data-mortgaged='true'] {
-  background: repeating-linear-gradient(135deg, var(--color-tile) 0 6px, var(--color-tile-mortgaged) 6px 12px);
+  background: repeating-linear-gradient(135deg, rgb(27 32 68 / 0.9) 0 6px, rgb(44 50 92 / 0.9) 6px 12px);
   color: var(--color-board-sub);
 }
 
@@ -155,9 +158,11 @@ button:disabled {
   align-items: center;
   justify-content: center;
   padding: 2px 4%;
-  font-size: clamp(7px, min(19cqmin, calc(var(--inner-w) * 0.86 / (var(--word, 6) * 0.6))), 13px);
+  font-family: var(--font-board);
+  font-size: clamp(9px, min(28cqmin, calc(var(--inner-w) * 0.9 / (var(--word, 6) * 0.5))), 18px);
   font-weight: 600;
-  line-height: 1.15;
+  line-height: 1.02;
+  letter-spacing: 0.015em;
   overflow-wrap: anywhere;
   hyphens: auto;
 }
@@ -172,8 +177,10 @@ button:disabled {
   padding: 1px 5px;
   border-radius: 999px;
   background: var(--color-board-pill);
-  font-size: clamp(9px, 18cqmin, 13px);
-  font-weight: 600;
+  font-family: var(--font-board);
+  font-size: clamp(10px, 21cqmin, 15px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
@@ -332,7 +339,7 @@ button:disabled {
 .board-shell { width: min(100%, max(720px, calc(100dvh - 175px))); padding: 10px; margin: 0 auto; border: 1px solid rgb(255 255 255 / .14); border-radius: 22px; background: radial-gradient(circle at 16% 18%, rgb(61 220 151 / .26), transparent 38%), radial-gradient(circle at 86% 26%, rgb(160 130 255 / .32), transparent 42%), radial-gradient(circle at 70% 88%, rgb(255 168 69 / .2), transparent 40%), radial-gradient(circle at 20% 84%, rgb(70 150 255 / .24), transparent 42%), linear-gradient(160deg, #1d2350, #121630); box-shadow: 0 16px 40px rgb(0 0 0 / .32), inset 0 1px 0 rgb(255 255 255 / .1); }
 .board-shell.is-zoomed { width: 100%; max-height: 70dvh; overflow: auto; overscroll-behavior: contain; }
 .board-shell.is-zoomed .board { min-width: 850px; }
-.board-center { background: linear-gradient(160deg, rgb(255 255 255 / .1), rgb(255 255 255 / .03)); box-shadow: inset 0 1px 0 rgb(255 255 255 / .1); }
+.board-center { background: linear-gradient(160deg, rgb(30 36 76 / .72), rgb(16 19 44 / .8)); box-shadow: inset 0 1px 0 rgb(255 255 255 / .08); }
 .board-center-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; max-width: 100%; padding: 16px 8%; text-align: center; color: var(--color-board-text); }
 .center-kicker { font-size: 10px; letter-spacing: .2em; font-weight: 700; color: var(--color-board-sub); }
 .center-player { display: flex; align-items: center; justify-content: center; gap: 9px; font: 600 clamp(18px, 3cqi, 28px)/1.1 var(--font-display); overflow-wrap: anywhere; }
@@ -479,9 +486,10 @@ button:disabled {
   max-height: 22cqi;
   overflow-y: auto;
   scrollbar-width: none;
-  color: var(--color-board-sub);
-  font-size: clamp(10px, 1.45cqi, 13px);
-  line-height: 1.35;
+  color: var(--color-board-text);
+  font-size: clamp(11px, 1.6cqi, 14px);
+  font-weight: 500;
+  line-height: 1.4;
   mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
 

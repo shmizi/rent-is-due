@@ -657,3 +657,7 @@ Harborview is gone from the game. It's kept only as a test fixture in `shared/te
 - **No fine at the end:** if the last allowed roll isn't doubles, the player is let out free and moves by that roll. The log says they were let out after the last attempt.
 
 131 tests pass. The three-player Edge test showed no browser errors, and a two-player Edge game showed the card and auction pop-ups on desktop and phone.
+
+### Readability pass and an easter egg
+- **Tile text:** names use Barlow Condensed (OFL, `@fontsource/barlow-condensed`) at up to 18 px, sized so the longest word fits. Tiles are darker glass, so white text has more contrast, and prices use the same condensed font on a dark pill. The board-centre log is white, slightly larger and fades less.
+- **Easter egg:** whoever owns every Israeli city shows as "Benjamin Netanyahu" everywhere in the game, and everyone gets a toast when it happens. It's display-only (`client/src/lib/aliases.ts`), so their real name comes back if they lose the set, and chat keeps their real name.
